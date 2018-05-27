@@ -1,0 +1,3 @@
+# Ignore GoLand Files
+.DS_Store
+.idea
