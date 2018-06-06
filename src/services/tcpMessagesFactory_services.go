@@ -6,7 +6,7 @@ import (
 	"models"
 )
 
-func CreateOnionTunnelBuild(onionTunnelBuild *models.OnionTunnelBuild) ([]byte)  {
+func CreateOnionTunnelBuild(onionTunnelBuild models.OnionTunnelBuild) ([]byte)  {
 	// Convert messageType to Byte array
 	messageTypeBuf := new(bytes.Buffer)
 	binary.Write(messageTypeBuf, binary.BigEndian, onionTunnelBuild.OnionTunnelBuild)
@@ -45,7 +45,7 @@ func CreateOnionTunnelBuild(onionTunnelBuild *models.OnionTunnelBuild) ([]byte) 
 	return message
 }
 
-func CreateOnionTunnelReady(onionTunnelReady *models.OnionTunnelReady) ([]byte) {
+func CreateOnionTunnelReady(onionTunnelReady models.OnionTunnelReady) ([]byte) {
 	// Convert messageType to Byte array
 	messageTypeBuf := new(bytes.Buffer)
 	binary.Write(messageTypeBuf, binary.BigEndian, onionTunnelReady.OnionTunnelReady)
@@ -65,7 +65,7 @@ func CreateOnionTunnelReady(onionTunnelReady *models.OnionTunnelReady) ([]byte) 
 	return message
 }
 
-func CreateOnionTunnelIncoming(onionTunnelIncoming *models.OnionTunnelIncoming) ([]byte){
+func CreateOnionTunnelIncoming(onionTunnelIncoming models.OnionTunnelIncoming) ([]byte){
 	// Convert messageType to Byte array
 	messageTypeBuf := new(bytes.Buffer)
 	binary.Write(messageTypeBuf, binary.BigEndian, onionTunnelIncoming.OnionTunnelIncoming)
@@ -82,7 +82,7 @@ func CreateOnionTunnelIncoming(onionTunnelIncoming *models.OnionTunnelIncoming) 
 	return message
 }
 
-func CreateOnionTunnelDestroy(onionTunnelDestroy *models.OnionTunnelDestroy) ([]byte){
+func CreateOnionTunnelDestroy(onionTunnelDestroy models.OnionTunnelDestroy) ([]byte){
 	// Convert messageType to Byte array
 	messageTypeBuf := new(bytes.Buffer)
 	binary.Write(messageTypeBuf, binary.BigEndian, onionTunnelDestroy.OnionTunnelDestroy)
