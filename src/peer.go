@@ -17,9 +17,16 @@ func main() {
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
-	
+
+	// Create new config file based on read in path
+	config, err := services.NewConfigObject(*possibleFlags)
+	if err != nil {
+		log.Print("Couldn't parse config file, please check it")
+		os.Exit(1)
+	}
+
 	// Start creating a peer which can just start listening
-	newPeer, err := services.CreateNewPeer(3000, "127.0.0.1")
+	newPeer, err := services.CreateNewPeer(config)
 	if err != nil {
 		log.Println("Couldn't create new Peer, error:", err)
 	}
