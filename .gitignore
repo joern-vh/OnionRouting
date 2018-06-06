@@ -1,3 +1,5 @@
 # Ignore GoLand Files
 .DS_Store
 .idea
+github.com
+golang.org
