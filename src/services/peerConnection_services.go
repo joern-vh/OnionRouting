@@ -16,7 +16,7 @@ type Peer struct {
 }
 // createPeer crates a new Peer object that is just listening, now writing necessary at the moment
 func CreateNewPeer(config *models.Config) (*Peer, error) {
-	log.Println("CreatePeer: Start creating a new peer")
+	log.Println("CreatePeer: Start creating a new peer on port", config.P2P_Port)
 
 	// Create new TCPListener for peer. Needs to be done like that due to 2=1 missmatch of arguments
 	newTCPListener, err := createTCPListener(config.P2P_Port)
