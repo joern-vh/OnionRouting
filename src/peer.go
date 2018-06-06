@@ -1,13 +1,23 @@
 package main
 
 import (
-	"log"
 	"services"
+	"log"
+	"flag"
+	"os"
 )
 
 func main() {
-	log.Println("Start creating peer")
+	// Define and parse command line flags
+	possibleFlags := flag.String("c", "config.ini", "Pleas write the path to your config.ini file ")
+	flag.Parse()
 
+	// Check if path was empty
+	if *possibleFlags == "" {
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
+	
 	// Start creating a peer which can just start listening
 	newPeer, err := services.CreateNewPeer(3000, "127.0.0.1")
 	if err != nil {
