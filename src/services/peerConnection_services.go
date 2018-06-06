@@ -15,18 +15,18 @@ type Peer struct {
 	PeerObject *models.Peer
 }
 // createPeer crates a new Peer object that is just listening, now writing necessary at the moment
-func CreateNewPeer(port int, host string) (*Peer, error) {
+func CreateNewPeer(config *models.Config) (*Peer, error) {
 	log.Println("CreatePeer: Start creating a new peer")
 
 	// Create new TCPListener for peer. Needs to be done like that due to 2=1 missmatch of arguments
-	newTCPListener, err := createTCPListener(port)
+	newTCPListener, err := createTCPListener(config.P2P_Port)
 	if err != nil {
 		log.Println("CreatePeer: Problem creating TCP listener, error: ", err)
 		return &Peer{&models.Peer{nil, 0, ""}}, err
 	}
 
 	// Create new peer
-	newPeer := &Peer{&models.Peer{newTCPListener, port, host}}
+	newPeer := &Peer{&models.Peer{newTCPListener, config.P2P_Port, config.P2P_Hostname}}
 
 	return newPeer, nil
 }
