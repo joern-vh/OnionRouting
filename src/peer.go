@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"models"
-	"services"
 )
 
 func listen(port string) {
@@ -54,10 +52,9 @@ func sendMessage(destinationAddress string, destinationPort int, message []byte)
 	conn.Close()
 }
 
-func main() {
-	//listen("3000")
+/*func main() {
 	buildMessage := models.OnionTunnelBuild{OnionTunnelBuild: uint16(560), NetworkVersion: "IPv4", Port: uint16(4200), DestinationAddress: "", DestinationHostkey: "KEY"}
 	onionTunnelBuild := services.CreateOnionTunnelBuild(buildMessage)
 	fmt.Printf("Message: %x\n", onionTunnelBuild)
 	sendMessage("192.168.0.10", 3000, onionTunnelBuild)
-}
+}*/
