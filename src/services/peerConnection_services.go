@@ -70,3 +70,20 @@ func (peer *Peer) StartTCPListening() error {
 		fmt.Printf("%x\n", newMessage)
 	}
 }
+
+// SendMessage gets address, port and message(type byte) to send it to one peer
+func (peer *Peer) SendMessage(destinationAddress string, destinationPort int, message []byte) (error) {
+	conn, err := net.Dial("tcp", destinationAddress + ":" + strconv.Itoa(destinationPort))
+	if err != nil {
+		return errors.New("SendMessage: Error while dialing to destination, error: " + err.Error())
+	}
+	defer conn.Close()
+
+	m, err := conn.Write(message)
+	if err != nil {
+		return errors.New("SendMessage: Error while writing message to destination, error: " + err.Error())
+	}
+
+	log.Printf("SendMessage: Send message of size: %d\n", m)
+	return nil
+}

@@ -37,4 +37,12 @@ func main() {
 		log.Println("Stopped peer due to error")
 		return
 	}
+
+	// TODO: Write new parameter option to send something
+	/*
+	buildMessage := models.OnionTunnelBuild{OnionTunnelBuild: uint16(560), NetworkVersion: "IPv4", Port: uint16(4200), DestinationAddress: "", DestinationHostkey: "KEY"}
+	onionTunnelBuild := services.CreateOnionTunnelBuild(buildMessage)
+	fmt.Printf("Message: %x\n", onionTunnelBuild)
+	sendMessage("192.168.0.10", 3000, onionTunnelBuild)
+	 */
 }
