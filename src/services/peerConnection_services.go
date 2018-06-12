@@ -22,18 +22,25 @@ func CreateNewPeer(config *models.Config) (*Peer, error) {
 	newTCPListener, err := createTCPListener(config.P2P_Port)
 	if err != nil {
 		log.Println("CreatePeer: Problem creating TCP listener, error: ", err)
-		return &Peer{&models.Peer{nil, 0, ""}}, err
+		return &Peer{&models.Peer{nil, nil ,0, ""}}, err
+	}
+
+	// Create new UDPListener for peer
+	newUDPListener, err := createUDPConn(config.P2P_Port)
+	if err != nil {
+		log.Println("CreatePeer: Problem creating UDP conn, error: ", err)
+		return &Peer{&models.Peer{nil, nil ,0, ""}}, err
 	}
 
 	// Create new peer
-	newPeer := &Peer{&models.Peer{newTCPListener, config.P2P_Port, config.P2P_Hostname}}
+	newPeer := &Peer{&models.Peer{newTCPListener, newUDPListener, config.P2P_Port, config.P2P_Hostname}}
 
 	return newPeer, nil
 }
 
 // createTCPListener creates the *net.Listener for one peer for TCP
 func createTCPListener(port int)  (*net.TCPListener, error){
-	log.Println("createListener: Create a new listener for TCP")
+	log.Println("createTCPListener: Create a new listener for TCP")
 
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", ":" + strconv.Itoa(port))
 	if err != nil {
@@ -48,11 +55,28 @@ func createTCPListener(port int)  (*net.TCPListener, error){
 	return listener, nil
 }
 
-// startTCPListening lets the peer listen for new TCP-messages on its P2P_Port
+// createUDPConn creates the *net.Conn for one peer for UDP
+func createUDPConn(port int)  (*net.UDPConn, error){
+	log.Println("createUDPConn: Create a new conn for UDP")
+
+	udpAddr, err := net.ResolveUDPAddr("udp", ":" + strconv.Itoa(port))
+	if err != nil {
+		return nil, errors.New("createUDPConn: Problem resolving UDP Address: " + err.Error())
+	}
+
+	conn, err := net.ListenUDP("udp", udpAddr)
+	if err != nil {
+		return nil, errors.New("createUDPConn: Problem creating net.UDPConn: " + err.Error())
+	}
+
+	return conn, nil
+}
+
+// StartTCPListening lets the peer listen for new TCP-messages on its P2P_Port
 func (peer *Peer) StartTCPListening() error {
 	log.Println("StartTCPListening: Started listenting")
 	for {
-		conn, err := peer.PeerObject.Listener.Accept()
+		conn, err := peer.PeerObject.TCPListener.Accept()
 		if err != nil {
 			//return errors.New("StartTCPListening: Couldn't start accepting new connctions: " + err.Error())
 			continue
@@ -67,6 +91,20 @@ func (peer *Peer) StartTCPListening() error {
 		}
 		// output message received
 		log.Println("StartTCPListening: Message Received with ", amountByteRead , " bytes: ")
+		fmt.Printf("%x\n", newMessage)
+	}
+}
+
+// StartUDPListening lets the peer listen for new UDP-messages
+func (peer *Peer) StartUDPListening() error {
+	log.Println("StartUDPListening: Started listenting")
+	newMessage := make([]byte, 1024)
+	for {
+		n,addr,err := peer.PeerObject.UDPConn.ReadFromUDP(newMessage)
+		if err != nil {
+			return errors.New("StartUDPListening: Couldn't read message received: " + err.Error())
+		}
+		log.Println("StartUDPListening: Message Received ", string(newMessage[0:n]), " from ",addr)
 		fmt.Printf("%x\n", newMessage)
 	}
 }
