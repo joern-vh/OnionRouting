@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"models"
+	"net"
+	"log"
 )
 
 func CreateOnionTunnelBuild(onionTunnelBuild models.OnionTunnelBuild) ([]byte)  {
@@ -18,10 +20,13 @@ func CreateOnionTunnelBuild(onionTunnelBuild models.OnionTunnelBuild) ([]byte)  
 		Set to 0 if IPv4. Set to 1 if IPv6
 	*****/
 	networkVersionBuf := new(bytes.Buffer)
+	ip := net.ParseIP(onionTunnelBuild.DestinationAddress)
 	if onionTunnelBuild.NetworkVersion == "IPv4"{
 		binary.Write(networkVersionBuf, binary.BigEndian, uint16(0))
+		ip = ip.To4()
 	} else if onionTunnelBuild.NetworkVersion == "IPv6"{
 		binary.Write(networkVersionBuf, binary.BigEndian, uint16(1))
+		ip.To16()
 	}
 	message = append(message, networkVersionBuf.Bytes()...)
 
@@ -31,7 +36,9 @@ func CreateOnionTunnelBuild(onionTunnelBuild models.OnionTunnelBuild) ([]byte)  
 	message = append(message, portBuf.Bytes()...)
 
 	// Convert destinationAddress to Byte Array
-	message = append(message, []byte(onionTunnelBuild.DestinationAddress)...)
+	//ip := net.ParseIP(onionTunnelBuild.DestinationAddress)
+	log.Printf("IP: %x\n", []byte(ip))
+	message = append(message, ip...)
 
 	// Convert destinationHostkey to Byte Array
 	message = append(message, []byte(onionTunnelBuild.DestinationHostkey)...)

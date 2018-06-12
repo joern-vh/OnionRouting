@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"fmt"
+	"net"
 )
 
 func HandleTCPMessage(message []byte) error {
@@ -19,17 +20,21 @@ func HandleTCPMessage(message []byte) error {
 			onionPort := binary.BigEndian.Uint16(message[6:8])
 			networkVersionString := ""
 			destinationAddress := ""
+			destinationHostkey := ""
 			if networkVersion == 0 {
 				networkVersionString = "IPv4"
-				destinationAddress = string(message[8:12])
+				destinationAddress = net.IP(message[8:12]).String()
+				destinationHostkey = string(message[12:])
 			} else if networkVersion == 1 {
 				networkVersionString = "IPv6"
-				destinationAddress = string(message[8:24])
+				destinationAddress = net.IP(message[8:24]).String()
+				destinationHostkey = string(message[24:])
 			}
 
 			fmt.Printf("Network Version: %s\n", networkVersionString)
 			fmt.Printf("Onion Port: %d\n", onionPort)
 			fmt.Printf("Destination Address: %s\n", destinationAddress)
+			fmt.Printf("Destination Hostkey: %s\n", destinationHostkey)
 			break
 		case 561:
 			log.Println("ONION TUNNEL READY")
