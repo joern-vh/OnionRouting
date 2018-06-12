@@ -48,7 +48,7 @@ func main() {
 	// For testing, check if we need to send a message and if yes, build and send it
 	if sendMessage == true {
 		log.Println("Create message")
-		buildMessage := models.OnionTunnelBuild{OnionTunnelBuild: uint16(560), NetworkVersion: "IPv4", Port: uint16(4200), DestinationAddress: "", DestinationHostkey: "KEY"}
+		buildMessage := models.OnionTunnelBuild{OnionTunnelBuild: uint16(560), NetworkVersion: "IPv4", Port: uint16(4200), DestinationAddress: "127.0.0.1", DestinationHostkey: "KEY"}
 		onionTunnelBuild := services.CreateOnionTunnelBuild(buildMessage)
 		log.Printf("Message: %x\n", onionTunnelBuild)
 		newPeer.SendMessage(sendMessageHost, sendMessagePort, onionTunnelBuild)

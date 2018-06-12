@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"fmt"
 	"models"
+	"controllers"
 )
 
 // Just used to wrap the actual Peer from models.Peer here to use it as caller
@@ -68,6 +69,7 @@ func (peer *Peer) StartTCPListening() error {
 		// output message received
 		log.Println("StartTCPListening: Message Received with ", amountByteRead , " bytes: ")
 		fmt.Printf("%x\n", newMessage)
+		controllers.HandleTCPMessage(newMessage)
 	}
 }
 
