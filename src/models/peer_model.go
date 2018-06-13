@@ -9,4 +9,5 @@ type Peer struct {
 	UDPConn			*net.UDPConn		`json:"udp_listener"`
 	P2P_Port		int					`json:"p2p_port"`			// This is the Port for the TCP port
 	P2P_Hostname	string				`json:"p2p_hostname"`		// This is the ip address of the peer
+	PrivateKey		[]byte				`json:"private_key"`
 }
