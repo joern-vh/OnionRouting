@@ -10,12 +10,12 @@ import (
 
 func HandleTCPMessage(message []byte) error {
 	//var messageTypeByte []byte = message[3:5]
-	messageValue := binary.BigEndian.Uint16(message[2:4])
-	fmt.Printf("%d\n", messageValue)
+	messageType := binary.BigEndian.Uint16(message[2:4])
+	fmt.Printf("%d\n", messageType)
 
-	switch messageValue {
+	switch messageType {
+		// ONION TUNNEL BUILD
 		case 560:
-			log.Println("ONION TUNNEL BUILD")
 			networkVersion := binary.BigEndian.Uint16(message[4:6])
 			onionPort := binary.BigEndian.Uint16(message[6:8])
 			networkVersionString := ""
@@ -31,19 +31,33 @@ func HandleTCPMessage(message []byte) error {
 				destinationHostkey = string(message[24:])
 			}
 
+			// ToDo: Implement functionality.
+
 			fmt.Printf("Network Version: %s\n", networkVersionString)
 			fmt.Printf("Onion Port: %d\n", onionPort)
 			fmt.Printf("Destination Address: %s\n", destinationAddress)
 			fmt.Printf("Destination Hostkey: %s\n", destinationHostkey)
 			break
+
+		// ONION TUNNEL READY
 		case 561:
-			log.Println("ONION TUNNEL READY")
+			tunnelID := string(message[4:8])
+			destinationHostkey := string(message[8:])
+			fmt.Printf("Tunnel ID: %s\n", tunnelID)
+			fmt.Printf("Destination Hostkey: %s\n", destinationHostkey)
 			break
+
+		// ONION TUNNEL INCOMING
 		case 562:
-			log.Println("ONION TUNNEL INCOMING")
+			tunnelID := string(message[4:8])
+			fmt.Printf("Tunnel ID: %s\n", tunnelID)
 			break
+
+		// ONION TUNNEL DESTROY
 		case 563:
-			log.Println("ONION TUNNEL DESTROY")
+			log.Println("ONION TUNNEL DESTROY received")
+			tunnelID := string(message[4:8])
+			fmt.Printf("Tunnel ID: %s\n", tunnelID)
 			break
 		default:
 			return errors.New("tcpMessagesController: Message Type not Found")
