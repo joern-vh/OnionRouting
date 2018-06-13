@@ -7,6 +7,11 @@ import (
 	"github.com/Thomasdezeeuw/ini"
 	"strconv"
 	"flag"
+	"encoding/pem"
+	"crypto/x509"
+	"crypto/rsa"
+	"io/ioutil"
+	"log"
 )
 
 // NewConfigObject creates a new config struct based on an config.ini file, passed as parameter
@@ -14,23 +19,42 @@ func NewConfigObject(pathToFile string) (*models.Config, error) {
 	// Open configuration file
 	file, err := os.Open(pathToFile)
 	if err != nil {
-		return &models.Config{0, "0"}, errors.New("NewConfigObject: Couldn't open file, is the path right?")
+		return &models.Config{0, "0", nil}, errors.New("NewConfigObject: Couldn't open file, is the path right?")
 	}
 	defer file.Close()
 
 	// Parse the actual configuration
 	config, err := ini.Parse(file)
 	if err != nil {
-		return &models.Config{0, "0"}, errors.New("NewConfigObject: Couldn't parse the config file")
+		return &models.Config{0, "0", nil}, errors.New("NewConfigObject: Couldn't parse the config file")
 	}
 
 	// Need to be done like this to handle erros
 	configP2PPort, err := strconv.Atoi(config["onion"]["p2p_port"])
 	if err != nil {
-		return &models.Config{0, "0"}, errors.New("NewConfigObject: Couldn't parse P2PPort")
+		return &models.Config{0, "0", nil}, errors.New("NewConfigObject: Couldn't parse P2PPort")
 	}
 
-	return &models.Config{configP2PPort, config["onion"]["p2p_hostname"]}, nil
+	publicKey, err := parsePrivateKey("private_key.pem")
+	if err != nil {
+		return &models.Config{0, "0", nil}, errors.New("NewConfigObject: Couldn't parse private key, error: " + err.Error())
+	}
+
+
+	return &models.Config{configP2PPort, config["onion"]["p2p_hostname"], publicKey}, nil
+}
+
+func parsePrivateKey(path string) ([]byte, error) {
+	pemKey, err := ioutil.ReadFile(path) // just pass the file name
+	if err != nil {
+		log.Println(err)
+		return nil, nil
+	}
+
+	block, _ := pem.Decode(pemKey)
+	parseResult, _ := x509.ParsePKCS8PrivateKey(block.Bytes)
+	key := parseResult.(*rsa.PrivateKey)
+	return key.N.Bytes(), nil
 }
 
 // ParseStartFlags check whether one of the available flags is used
