@@ -22,18 +22,18 @@ func CreateNewPeer(config *models.Config) (*Peer, error) {
 	newTCPListener, err := createTCPListener(config.P2P_Port)
 	if err != nil {
 		log.Println("CreatePeer: Problem creating TCP listener, error: ", err)
-		return &Peer{&models.Peer{nil, nil ,0, ""}}, err
+		return &Peer{&models.Peer{nil, nil ,0, "", nil}}, err
 	}
 
 	// Create new UDPListener for peer
 	newUDPListener, err := createUDPConn(config.P2P_Port)
 	if err != nil {
 		log.Println("CreatePeer: Problem creating UDP conn, error: ", err)
-		return &Peer{&models.Peer{nil, nil ,0, ""}}, err
+		return &Peer{&models.Peer{nil, nil ,0, "", nil}}, err
 	}
 
 	// Create new peer
-	newPeer := &Peer{&models.Peer{newTCPListener, newUDPListener, config.P2P_Port, config.P2P_Hostname}}
+	newPeer := &Peer{&models.Peer{newTCPListener, newUDPListener, config.P2P_Port, config.P2P_Hostname, config.PrivateKey}}
 
 	return newPeer, nil
 }
@@ -98,14 +98,14 @@ func (peer *Peer) StartTCPListening() error {
 // StartUDPListening lets the peer listen for new UDP-messages
 func (peer *Peer) StartUDPListening() error {
 	log.Println("StartUDPListening: Started listenting")
-	newMessage := make([]byte, 1024)
+	buf := make([]byte, 1024)
 	for {
-		n,addr,err := peer.PeerObject.UDPConn.ReadFromUDP(newMessage)
+		n,addr,err := peer.PeerObject.UDPConn.ReadFromUDP(buf)
 		if err != nil {
 			return errors.New("StartUDPListening: Couldn't read message received: " + err.Error())
 		}
-		log.Println("StartUDPListening: Message Received ", string(newMessage[0:n]), " from ",addr)
-		fmt.Printf("%x\n", newMessage)
+		log.Println("StartUDPListening: Message Received ", string(buf[0:n]), " from ",addr)
+
 	}
 }
 
