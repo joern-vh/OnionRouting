@@ -6,12 +6,11 @@ import (
 	"errors"
 	"github.com/Thomasdezeeuw/ini"
 	"strconv"
-	"flag"
 	"encoding/pem"
 	"crypto/x509"
 	"crypto/rsa"
 	"io/ioutil"
-	"log"
+	"flag"
 )
 
 // NewConfigObject creates a new config struct based on an config.ini file, passed as parameter
@@ -19,42 +18,41 @@ func NewConfigObject(pathToFile string) (*models.Config, error) {
 	// Open configuration file
 	file, err := os.Open(pathToFile)
 	if err != nil {
-		return &models.Config{0, "0", nil}, errors.New("NewConfigObject: Couldn't open file, is the path right?")
+		return &models.Config{0, "0", nil, nil}, errors.New("NewConfigObject: Couldn't open file, is the path right?")
 	}
 	defer file.Close()
 
 	// Parse the actual configuration
 	config, err := ini.Parse(file)
 	if err != nil {
-		return &models.Config{0, "0", nil}, errors.New("NewConfigObject: Couldn't parse the config file")
+		return &models.Config{0, "0", nil, nil}, errors.New("NewConfigObject: Couldn't parse the config file")
 	}
 
 	// Need to be done like this to handle erros
 	configP2PPort, err := strconv.Atoi(config["onion"]["p2p_port"])
 	if err != nil {
-		return &models.Config{0, "0", nil}, errors.New("NewConfigObject: Couldn't parse P2PPort")
+		return &models.Config{0, "0", nil, nil}, errors.New("NewConfigObject: Couldn't parse P2PPort")
 	}
 
-	publicKey, err := parsePrivateKey("private_key.pem")
+	privateKey, publicKey, err := parseKeys(config["onion"]["hostkey"])
 	if err != nil {
-		return &models.Config{0, "0", nil}, errors.New("NewConfigObject: Couldn't parse private key, error: " + err.Error())
+		return &models.Config{0, "0", nil, nil}, errors.New("NewConfigObject: Couldn't parse private key, error: " + err.Error())
 	}
 
-
-	return &models.Config{configP2PPort, config["onion"]["p2p_hostname"], publicKey}, nil
+	return &models.Config{configP2PPort, config["onion"]["p2p_hostname"], privateKey, publicKey}, nil
 }
 
-func parsePrivateKey(path string) ([]byte, error) {
+func parseKeys(path string) ([]byte, []byte, error) {
 	pemKey, err := ioutil.ReadFile(path) // just pass the file name
 	if err != nil {
-		log.Println(err)
-		return nil, nil
+		return nil, nil, errors.New("parseKeys: Error reading file, err: " + err.Error())
 	}
 
 	block, _ := pem.Decode(pemKey)
 	parseResult, _ := x509.ParsePKCS8PrivateKey(block.Bytes)
-	key := parseResult.(*rsa.PrivateKey)
-	return key.N.Bytes(), nil
+	privateKey := parseResult.(*rsa.PrivateKey)
+	publicKey := privateKey.PublicKey
+	return privateKey.N.Bytes(), publicKey.N.Bytes(), nil
 }
 
 // ParseStartFlags check whether one of the available flags is used
