@@ -18,9 +18,9 @@ func HandleTCPMessage(message []byte) error {
 		case 560:
 			networkVersion := binary.BigEndian.Uint16(message[4:6])
 			onionPort := binary.BigEndian.Uint16(message[6:8])
-			networkVersionString := ""
-			destinationAddress := ""
-			destinationHostkey := ""
+			var networkVersionString string
+			var destinationAddress string
+			var destinationHostkey string
 			if networkVersion == 0 {
 				networkVersionString = "IPv4"
 				destinationAddress = net.IP(message[8:12]).String()
