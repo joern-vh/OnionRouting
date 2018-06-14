@@ -20,15 +20,15 @@ func HandleTCPMessage(message []byte) error {
 			onionPort := binary.BigEndian.Uint16(message[6:8])
 			var networkVersionString string
 			var destinationAddress string
-			var destinationHostkey string
+			var destinationHostkey []byte
 			if networkVersion == 0 {
 				networkVersionString = "IPv4"
 				destinationAddress = net.IP(message[8:12]).String()
-				destinationHostkey = string(message[12:])
+				destinationHostkey = message[12:]
 			} else if networkVersion == 1 {
 				networkVersionString = "IPv6"
 				destinationAddress = net.IP(message[8:24]).String()
-				destinationHostkey = string(message[24:])
+				destinationHostkey = message[24:]
 			}
 
 			// ToDo: Implement functionality.
@@ -42,7 +42,7 @@ func HandleTCPMessage(message []byte) error {
 		// ONION TUNNEL READY
 		case 561:
 			tunnelID := string(message[4:8])
-			destinationHostkey := string(message[8:])
+			destinationHostkey := message[8:]
 			fmt.Printf("Tunnel ID: %s\n", tunnelID)
 			fmt.Printf("Destination Hostkey: %s\n", destinationHostkey)
 			break

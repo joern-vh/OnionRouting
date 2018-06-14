@@ -41,7 +41,7 @@ func CreateOnionTunnelBuild(onionTunnelBuild models.OnionTunnelBuild) ([]byte)  
 	message = append(message, ip...)
 
 	// Convert destinationHostkey to Byte Array
-	message = append(message, []byte(onionTunnelBuild.DestinationHostkey)...)
+	message = append(message, onionTunnelBuild.DestinationHostkey...)
 
 
 	// Prepend size of message
@@ -62,7 +62,7 @@ func CreateOnionTunnelReady(onionTunnelReady models.OnionTunnelReady) ([]byte) {
 	message = append(message, []byte(onionTunnelReady.TunnelID)...)
 
 	// Convert destinationHostkey to Byte Array
-	message = append(message, []byte(onionTunnelReady.DestinationHostkey)...)
+	message = append(message, onionTunnelReady.DestinationHostkey...)
 
 	// Prepend size of message
 	sizeBuf := new(bytes.Buffer)

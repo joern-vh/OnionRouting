@@ -5,13 +5,13 @@ type OnionTunnelBuild struct {
 	NetworkVersion			string
 	Port					uint16
 	DestinationAddress 		string
-	DestinationHostkey 		string
+	DestinationHostkey 		[]byte
 }
 
 type OnionTunnelReady struct {
 	OnionTunnelReady 		uint16
 	TunnelID 				string
-	DestinationHostkey 		string
+	DestinationHostkey 		[]byte
 }
 
 type OnionTunnelIncoming struct {
