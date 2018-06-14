@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"encoding/pem"
 	"crypto/x509"
-	"crypto/rsa"
 	"io/ioutil"
 	"flag"
+	"crypto/rsa"
 )
 
 // NewConfigObject creates a new config struct based on an config.ini file, passed as parameter
@@ -48,7 +48,7 @@ func parseKeys(path string) ([]byte, []byte, error) {
 		return nil, nil, errors.New("parseKeys: Error reading file, err: " + err.Error())
 	}
 
-	block, _ := pem.Decode(pemKey)
+	block, _ := pem.Decode([]byte(pemKey))
 	parseResult, _ := x509.ParsePKCS8PrivateKey(block.Bytes)
 	privateKey := parseResult.(*rsa.PrivateKey)
 	publicKey := privateKey.PublicKey
