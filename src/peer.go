@@ -33,9 +33,19 @@ func main() {
 	// This need to run concurrent, so that we can listen and write at the same time >> Use channel for synchronisation, use gofunc to run concurrent
 	communicationChannel := make(chan error)
 	go func() {
-		// Now start listening
+		// Now start TCP listening
 		if err := newPeer.StartTCPListening(); err != nil {
-			log.Println("Problem listening for new messages: ")
+			log.Println("Problem listening for new TCP messages: ")
+			log.Println("Stopped peer due to error")
+			communicationChannel <- err
+			return
+		}
+	}()
+
+	go func() {
+		// Now start UDP listening
+		if err := newPeer.StartUDPListening(); err != nil {
+			log.Println("Problem listening for new UDP messages: ")
 			log.Println("Stopped peer due to error")
 			communicationChannel <- err
 			return
