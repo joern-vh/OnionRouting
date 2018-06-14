@@ -22,18 +22,18 @@ func CreateNewPeer(config *models.Config) (*Peer, error) {
 	newTCPListener, err := createTCPListener(config.P2P_Port)
 	if err != nil {
 		log.Println("CreatePeer: Problem creating TCP listener, error: ", err)
-		return &Peer{&models.Peer{nil, nil ,0, "", nil}}, err
+		return &Peer{&models.Peer{nil, nil ,0, "", nil, nil}}, err
 	}
 
 	// Create new UDPListener for peer
 	newUDPListener, err := createUDPConn(config.P2P_Port)
 	if err != nil {
 		log.Println("CreatePeer: Problem creating UDP conn, error: ", err)
-		return &Peer{&models.Peer{nil, nil ,0, "", nil}}, err
+		return &Peer{&models.Peer{nil, nil ,0, "", nil, nil}}, err
 	}
 
 	// Create new peer
-	newPeer := &Peer{&models.Peer{newTCPListener, newUDPListener, config.P2P_Port, config.P2P_Hostname, config.PrivateKey}}
+	newPeer := &Peer{&models.Peer{newTCPListener, newUDPListener, config.P2P_Port, config.P2P_Hostname, config.PrivateKey, config.PublicKey}}
 
 	return newPeer, nil
 }
