@@ -5,4 +5,5 @@ type Config struct {
 	P2P_Port		int			`json:"p2p_port"`
 	P2P_Hostname	string		`json:"p2p_hostname"`
 	PrivateKey		[]byte		`json:"private_key"`
+	PublicKey 		[]byte		`json:"public_key"`
 }
