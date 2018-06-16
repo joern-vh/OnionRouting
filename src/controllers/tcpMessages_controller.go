@@ -6,9 +6,19 @@ import (
 	"log"
 	"fmt"
 	"net"
+	"services"
+
 )
 
-func HandleTCPMessage(message []byte) error {
+func StartTCPController(myPeer *services.Peer) {
+	for msg := range services.CommunicationChannelTCPMessages {
+		log.Println("FICK DICH !!!!!")
+		handleTCPMessage(msg, myPeer)
+	}
+}
+
+func  handleTCPMessage(message []byte, myPeer *services.Peer) error {
+	log.Println("FICK DICH !!!!!2")
 	//var messageTypeByte []byte = message[3:5]
 	messageType := binary.BigEndian.Uint16(message[2:4])
 	fmt.Printf("%d\n", messageType)
@@ -31,8 +41,24 @@ func HandleTCPMessage(message []byte) error {
 				destinationHostkey = message[24:]
 			}
 
-			// ToDo: Implement functionality.
+			newUDPConnection, err := services.CreateNewUDPConnection(int(onionPort), networkVersionString, destinationAddress, destinationHostkey)
+			if err != nil {
+				log.Println("HandleTCPMessage: Problem creating new UDPConnection, error: " + err.Error())
+			}
 
+			myPeer.AppendUDPConnection(newUDPConnection)
+
+			go func() {
+				// Now start UDP listening
+				if err := newUDPConnection.StartUDPListening(); err != nil {
+					log.Println("Problem listening for new UDP messages: ")
+					log.Println("Stopped peer due to error")
+					services.CommunicationChannelUDP <- err
+					return
+				}
+			}()
+
+			// TODO: Start
 			fmt.Printf("Network Version: %s\n", networkVersionString)
 			fmt.Printf("Onion Port: %d\n", onionPort)
 			fmt.Printf("Destination Address: %s\n", destinationAddress)

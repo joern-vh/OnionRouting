@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 	"models"
+	"controllers"
 )
 
 func main() {
@@ -30,27 +31,12 @@ func main() {
 		log.Println("Couldn't create new Peer, error:", err)
 	}
 
-	// This need to run concurrent, so that we can listen and write at the same time >> Use channel for synchronisation, use gofunc to run concurrent
-	communicationChannel := make(chan error)
-	go func() {
-		// Now start TCP listening
-		if err := newPeer.StartTCPListening(); err != nil {
-			log.Println("Problem listening for new TCP messages: ")
-			log.Println("Stopped peer due to error")
-			communicationChannel <- err
-			return
-		}
-	}()
+	// Initialize global CommunicationChannelUDP
+	services.CommunicationChannelUDP = make(chan error)
 
-	go func() {
-		// Now start UDP listening
-		if err := newPeer.StartUDPListening(); err != nil {
-			log.Println("Problem listening for new UDP messages: ")
-			log.Println("Stopped peer due to error")
-			communicationChannel <- err
-			return
-		}
-	}()
+	// This need to run concurrent, so that we can listen and write at the same time >> Use channel for synchronisation, use gofunc to run concurrent
+	newPeer.StartTCPListening()
+	controllers.StartTCPController(newPeer)
 
 	// Sleep for two seconds to give StartTCPListening() time to create the TCPListener
 	time.Sleep(time.Second * 2)
@@ -58,16 +44,21 @@ func main() {
 	// For testing, check if we need to send a message and if yes, build and send it
 	if sendMessage == true {
 		log.Println("Create message")
-		buildMessage := models.OnionTunnelBuild{OnionTunnelBuild: uint16(560), NetworkVersion: "IPv4", Port: uint16(4200), DestinationAddress: "127.0.0.1", DestinationHostkey: "KEY"}
+		buildMessage := models.OnionTunnelBuild{OnionTunnelBuild: uint16(560), NetworkVersion: "IPv4", Port: uint16(4200), DestinationAddress: "127.0.0.1", DestinationHostkey: []byte("KEY")}
 		onionTunnelBuild := services.CreateOnionTunnelBuild(buildMessage)
 		log.Printf("Message: %x\n", onionTunnelBuild)
 		newPeer.SendMessage(sendMessageHost, sendMessagePort, onionTunnelBuild)
 	}
 
 	// Wait here for errors from the channel
-	if err := <- communicationChannel; err != nil {
-		log.Println("Yes, error")
-		log.Println(err.Error())
-		os.Exit(1)
+	if err := <- services.CommunicationChannelTCPError; err != nil {
+		log.Println("communicationChannelTCP Error: ," + err.Error())
+		// TODO: Make error handline fine (again)
+	}
+
+	// Weait here for errors from UDP
+	if err := <- services.CommunicationChannelUDP; err != nil {
+		log.Println("CommunicationChannelUDP Error: ," + err.Error())
+		// TODO: Make error handline fine (again)
 	}
 }

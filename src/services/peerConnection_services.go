@@ -6,15 +6,19 @@ import (
 	"errors"
 	"bufio"
 	"strconv"
-	"fmt"
 	"models"
-	"controllers"
 )
 
 // Just used to wrap the actual Peer from models.Peer here to use it as caller
 type Peer struct {
 	PeerObject *models.Peer
 }
+
+// GLobal channel for communication errors from TCP
+var CommunicationChannelTCPError chan error
+var CommunicationChannelTCPMessages chan []byte
+
+
 // createPeer crates a new Peer object that is just listening, now writing necessary at the moment
 func CreateNewPeer(config *models.Config) (*Peer, error) {
 	log.Println("CreatePeer: Start creating a new peer on port", config.P2P_Port)
@@ -23,18 +27,11 @@ func CreateNewPeer(config *models.Config) (*Peer, error) {
 	newTCPListener, err := createTCPListener(config.P2P_Port)
 	if err != nil {
 		log.Println("CreatePeer: Problem creating TCP listener, error: ", err)
-		return &Peer{&models.Peer{nil, nil ,0, "", nil, nil}}, err
-	}
-
-	// Create new UDPListener for peer
-	newUDPListener, err := createUDPConn(config.P2P_Port)
-	if err != nil {
-		log.Println("CreatePeer: Problem creating UDP conn, error: ", err)
-		return &Peer{&models.Peer{nil, nil ,0, "", nil, nil}}, err
+		return &Peer{&models.Peer{nil ,0, "", nil, nil, nil}}, err
 	}
 
 	// Create new peer
-	newPeer := &Peer{&models.Peer{newTCPListener, newUDPListener, config.P2P_Port, config.P2P_Hostname, config.PrivateKey, config.PublicKey}}
+	newPeer := &Peer{&models.Peer{newTCPListener, config.P2P_Port, config.P2P_Hostname, config.PrivateKey, config.PublicKey, make(map[string] *models.UDPConnection)}}
 
 	return newPeer, nil
 }
@@ -56,59 +53,35 @@ func createTCPListener(port int)  (*net.TCPListener, error){
 	return listener, nil
 }
 
-// createUDPConn creates the *net.Conn for one peer for UDP
-func createUDPConn(port int)  (*net.UDPConn, error){
-	log.Println("createUDPConn: Create a new conn for UDP")
-
-	udpAddr, err := net.ResolveUDPAddr("udp", ":" + strconv.Itoa(port))
-	if err != nil {
-		return nil, errors.New("createUDPConn: Problem resolving UDP Address: " + err.Error())
-	}
-
-	conn, err := net.ListenUDP("udp", udpAddr)
-	if err != nil {
-		return nil, errors.New("createUDPConn: Problem creating net.UDPConn: " + err.Error())
-	}
-
-	return conn, nil
-}
-
 // StartTCPListening lets the peer listen for new TCP-messages on its P2P_Port
-func (peer *Peer) StartTCPListening() error {
-	log.Println("StartTCPListening: Started listenting")
-	for {
-		conn, err := peer.PeerObject.TCPListener.Accept()
-		if err != nil {
+func (peer *Peer) StartTCPListening() {
+	// Initialize global communicationChannelTCP
+	CommunicationChannelTCPError = make(chan error)
+	CommunicationChannelTCPMessages = make(chan []byte)
+	go func() {
+		log.Println("StartTCPListening: Started listenting")
+		for {
+			conn, err := peer.PeerObject.TCPListener.Accept()
+			if err != nil {
 			//return errors.New("StartTCPListening: Couldn't start accepting new connctions: " + err.Error())
 			continue
-		}
-		log.Println("StartTCPListening: New message")
+			}
+			log.Println("StartTCPListening: New message")
 
-		// Reader.Read() saves content received in newMessage
-		newMessage := make([]byte, 64)
-		amountByteRead, err := bufio.NewReader(conn).Read(newMessage)
-		if err != nil {
-			return errors.New("StartTCPListening: Couldn't read message received: " + err.Error())
-		}
-		// output message received
-		log.Println("StartTCPListening: Message Received with ", amountByteRead , " bytes: ")
-		fmt.Printf("%x\n", newMessage)
-		controllers.HandleTCPMessage(newMessage)
-	}
-}
+			// Reader.Read() saves content received in newMessage
+			newMessage := make([]byte, 64)
+			amountByteRead, err := bufio.NewReader(conn).Read(newMessage)
+			if err != nil {
+				CommunicationChannelTCPError <- err
+			}
+			// output message received
+			log.Println("StartTCPListening: Message Received with ", amountByteRead , " bytes: ")
+			log.Printf("%x\n", newMessage)
 
-// StartUDPListening lets the peer listen for new UDP-messages
-func (peer *Peer) StartUDPListening() error {
-	log.Println("StartUDPListening: Started listenting")
-	buf := make([]byte, 1024)
-	for {
-		n,addr,err := peer.PeerObject.UDPConn.ReadFromUDP(buf)
-		if err != nil {
-			return errors.New("StartUDPListening: Couldn't read message received: " + err.Error())
+			CommunicationChannelTCPMessages <- newMessage
+			//controllers.HandleTCPMessage(newMessage, peer)
 		}
-		log.Println("StartUDPListening: Message Received ", string(buf[0:n]), " from ",addr)
-
-	}
+	}()
 }
 
 // SendMessage gets address, port and message(type byte) to send it to one peer
@@ -126,4 +99,10 @@ func (peer *Peer) SendMessage(destinationAddress string, destinationPort int, me
 
 	log.Printf("SendMessage: Send message of size: %d\n", m)
 	return nil
+}
+
+func (myPeer *Peer) AppendUDPConnection(connection *UDPConnection) {
+	// TODO: Check if imports are right >> Not sure about mdoels, choosen the right one in actual connection model?
+	myPeer.PeerObject.UDPConnections[connection.UCPConnObject.TunnelId] = connection.UCPConnObject //= append(myPeer.PeerObject.UDPConnections, connection)
+	return
 }
