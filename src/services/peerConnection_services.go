@@ -119,9 +119,7 @@ func (peer *Peer) StartUDPListening() {
 	// Initialize global communicationChannelUDP
 	CommunicationChannelUDPErrors = make(chan error)
 	CommunicationChannelUDPMessages = make(chan []byte)
-
-	CreateTunnelID()
-
+	
 	go func() {
 		log.Println("StartUDPListening: Started listening")
 		buf := make([]byte, 1024)
