@@ -1,12 +1,10 @@
 package models
 
-import "net"
-
 type UDPConnection struct {
-	Port				int					`json:"port"`
-	UDPConn				*net.UDPConn		`json:"udp_listener"`
 	TunnelId			string				`json:"tunnelId"`
 	NetworkVersion		string				`json:"networkVersion"`
-	DestinationAddress	string				`json:"destinationAddress"`
-	DestinationHostKey	[]byte				`json:"destinationHostKey"`
+	LeftPort			int 				`json:"left_port"`
+	RightPort			int 				`json:"right_port"`
+	//DestinationAddress	string				`json:"destinationAddress"`
+	//DestinationHostKey	[]byte				`json:"destinationHostKey"`
 }
