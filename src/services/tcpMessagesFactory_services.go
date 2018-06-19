@@ -9,9 +9,12 @@ import (
 )
 
 func CreateOnionTunnelBuild(onionTunnelBuild models.OnionTunnelBuild) ([]byte)  {
+	// Message Type
+	messageType := uint16(560)
+
 	// Convert messageType to Byte array
 	messageTypeBuf := new(bytes.Buffer)
-	binary.Write(messageTypeBuf, binary.BigEndian, onionTunnelBuild.OnionTunnelBuild)
+	binary.Write(messageTypeBuf, binary.BigEndian, messageType)
 	message := messageTypeBuf.Bytes()
 
 	/*****
@@ -53,9 +56,12 @@ func CreateOnionTunnelBuild(onionTunnelBuild models.OnionTunnelBuild) ([]byte)  
 }
 
 func CreateOnionTunnelReady(onionTunnelReady models.OnionTunnelReady) ([]byte) {
+	// Message Type
+	messageType := uint16(561)
+
 	// Convert messageType to Byte array
 	messageTypeBuf := new(bytes.Buffer)
-	binary.Write(messageTypeBuf, binary.BigEndian, onionTunnelReady.OnionTunnelReady)
+	binary.Write(messageTypeBuf, binary.BigEndian, messageType)
 	message := messageTypeBuf.Bytes()
 
 	// Convert tunnelID to Byte Array
@@ -73,9 +79,12 @@ func CreateOnionTunnelReady(onionTunnelReady models.OnionTunnelReady) ([]byte) {
 }
 
 func CreateOnionTunnelIncoming(onionTunnelIncoming models.OnionTunnelIncoming) ([]byte){
+	// Message Type
+	messageType := uint16(562)
+
 	// Convert messageType to Byte array
 	messageTypeBuf := new(bytes.Buffer)
-	binary.Write(messageTypeBuf, binary.BigEndian, onionTunnelIncoming.OnionTunnelIncoming)
+	binary.Write(messageTypeBuf, binary.BigEndian, messageType)
 	message := messageTypeBuf.Bytes()
 
 	// Convert tunnelID to Byte Array
@@ -90,9 +99,12 @@ func CreateOnionTunnelIncoming(onionTunnelIncoming models.OnionTunnelIncoming) (
 }
 
 func CreateOnionTunnelDestroy(onionTunnelDestroy models.OnionTunnelDestroy) ([]byte){
+	// Message Type
+	messageType := uint16(563)
+
 	// Convert messageType to Byte array
 	messageTypeBuf := new(bytes.Buffer)
-	binary.Write(messageTypeBuf, binary.BigEndian, onionTunnelDestroy.OnionTunnelDestroy)
+	binary.Write(messageTypeBuf, binary.BigEndian, messageType)
 	message := messageTypeBuf.Bytes()
 
 	// Convert tunnelID to Byte Array
