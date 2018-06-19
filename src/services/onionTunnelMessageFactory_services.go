@@ -80,7 +80,7 @@ func CreateConstructTunnelMessage(constructTunnel models.ConstructTunnel) ([]byt
 
 func CreateConfirmTunnelCronstructionMessage(confirmTunnelConstruction models.ConfirmTunnelConstruction) ([]byte) {
 	// Message Type
-	messageType := uint16(567)
+	messageType := uint16(568)
 
 	// Convert messageType to Byte array
 	messageTypeBuf := new(bytes.Buffer)
