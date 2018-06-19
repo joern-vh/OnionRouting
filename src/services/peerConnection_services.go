@@ -14,9 +14,15 @@ type Peer struct {
 	PeerObject *models.Peer
 }
 
+// Used to transmit the message and the ip in the CommunicationChannelTCPMessages
+type TCPMessageChannel struct {
+	Message		[]byte
+	Host		string		// Attention, hast port
+}
+
 // GLobal channel for communication errors and messages from TCP
 var CommunicationChannelTCPErrors chan error
-var CommunicationChannelTCPMessages chan []byte
+var CommunicationChannelTCPMessages chan TCPMessageChannel
 
 // GLobal channel for communication errors and messages from TCP
 var CommunicationChannelUDPErrors chan error
@@ -67,7 +73,7 @@ func createTCPListener(port int)  (*net.TCPListener, error){
 func (peer *Peer) StartTCPListening() {
 	// Initialize global communicationChannelTCP
 	CommunicationChannelTCPErrors = make(chan error)
-	CommunicationChannelTCPMessages = make(chan []byte)
+	CommunicationChannelTCPMessages = make(chan TCPMessageChannel)
 
 	go func() {
 		log.Println("StartTCPListening: Started listenting")
@@ -84,9 +90,9 @@ func (peer *Peer) StartTCPListening() {
 			if err != nil {
 				CommunicationChannelTCPErrors <- err
 			}
-			log.Println("StartTCPListening: Received new message with ", amountBytesRead, " bytes")
+			log.Println("StartTCPListening: Received new message with ", amountBytesRead, " bytes from ", conn.RemoteAddr().String())
 			// Pass newMessage into TCPMessageChannel
-			CommunicationChannelTCPMessages <- newMessage
+			CommunicationChannelTCPMessages <- TCPMessageChannel{newMessage, conn.RemoteAddr().String()}
 		}
 	}()
 }
@@ -135,22 +141,6 @@ func (peer *Peer) StartUDPListening() {
 	}()
 }
 
-// getFreePort returns a new free port
-func getFreePort() (int, error) {
-	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	if err != nil {
-		return 0, err
-	}
-
-	l, err := net.ListenTCP("tcp", addr)
-	if err != nil {
-		return 0, err
-	}
-	defer l.Close()
-
-	return l.Addr().(*net.TCPAddr).Port, nil
-}
-
 // SendMessage gets address, port and message(type byte) to send it to one peer
 func (peer *Peer) SendMessage(destinationAddress string, destinationPort int, message []byte) (error) {
 	conn, err := net.Dial("tcp", destinationAddress + ":" + strconv.Itoa(destinationPort))
@@ -166,4 +156,8 @@ func (peer *Peer) SendMessage(destinationAddress string, destinationPort int, me
 
 	log.Printf("SendMessage: Send message of size: %d\n", m)
 	return nil
+}
+
+func (peer *Peer) AppendNewUDPConnection(myUDPConnectio  *models.UDPConnection) {
+	peer.PeerObject.UDPConnections[myUDPConnectio.TunnelId] = myUDPConnectio
 }
