@@ -84,7 +84,7 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel) {
 
 func handleOnionTunnelDestroy(messageChannel services.TCPMessageChannel) {
 	log.Println("ONION TUNNEL DESTROY received")
-	tunnelID := string(messageChannel.Message[4:8])
+	tunnelID := binary.BigEndian.Uint32(messageChannel.Message[4:8])
 	log.Printf("Tunnel ID: %s\n", tunnelID)
 }
 
@@ -95,16 +95,16 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel) (*models.U
 
 	networkVersion := binary.BigEndian.Uint16(messageChannel.Message[4:6])
 	onionPort := binary.BigEndian.Uint16(messageChannel.Message[6:8])
-	tunnelID := binary.BigEndian.Uint16(messageChannel.Message[8:12])
+	tunnelID := binary.BigEndian.Uint32(messageChannel.Message[8:12])
 
 	if networkVersion == 0 {
 		networkVersionString = "IPv4"
-		destinationAddress = net.IP(messageChannel.Message[8:12]).String()
-		destinationHostkey = messageChannel.Message[12:]
+		destinationAddress = net.IP(messageChannel.Message[12:16]).String()
+		destinationHostkey = messageChannel.Message[16:]
 	} else if networkVersion == 1 {
 		networkVersionString = "IPv6"
-		destinationAddress = net.IP(messageChannel.Message[8:24]).String()
-		destinationHostkey = messageChannel.Message[24:]
+		destinationAddress = net.IP(messageChannel.Message[12:28]).String()
+		destinationHostkey = messageChannel.Message[28:]
 	}
 
 	log.Printf("Network Version: %s\n", networkVersionString)
@@ -116,7 +116,7 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel) (*models.U
 	// First, get ip address of sender
 	ipAdd := services.GetIPOutOfAddr(messageChannel.Host)
 	//  Now, create new UDP Connection with this "sender" as left side
-	newUDPConnection, err := services.CreateInitialUDPConnection(ipAdd, int(onionPort), tunnelId, networkVersionString)
+	newUDPConnection, err := services.CreateInitialUDPConnection(ipAdd, int(onionPort), tunnelID, networkVersionString)
 	if err != nil {
 		return nil, errors.New("handleConstructTunnel: " + err.Error())
 	}
@@ -126,7 +126,7 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel) (*models.U
 
 func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel) {
 	onionPort := binary.BigEndian.Uint16(messageChannel.Message[4:6])
-	tunnelID := string(messageChannel.Message[6:10])
+	tunnelID := binary.BigEndian.Uint32(messageChannel.Message[6:10])
 	destinationHostkey := messageChannel.Message[10:]
 
 	log.Printf("Onion Port: %s\n", onionPort)

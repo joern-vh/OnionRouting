@@ -47,7 +47,7 @@ func CreateNewPeer(config *models.Config) (*Peer, error) {
 	}
 
 	// Create new peer
-	newPeer := &Peer{&models.Peer{newTCPListener, newUDPListener,  config.P2P_Port, config.P2P_Hostname, config.PrivateKey, config.PublicKey, make(map[string] *models.UDPConnection)}}
+	newPeer := &Peer{&models.Peer{newTCPListener, newUDPListener,  config.P2P_Port, config.P2P_Hostname, config.PrivateKey, config.PublicKey, make(map[uint32] *models.UDPConnection)}}
 
 	return newPeer, nil
 }

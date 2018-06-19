@@ -13,5 +13,5 @@ type Peer struct {
 	P2P_Hostname	string							`json:"p2p_hostname"`		// This is the ip address of the peer
 	PrivateKey		[]byte							`json:"private_key"`
 	PublicKey		[]byte 							`json:"public_key"`
-	UDPConnections	map[string]*UDPConnection 		`json:"udp_connections"`
+	UDPConnections	map[uint32]*UDPConnection 		`json:"udp_connections"`
 }

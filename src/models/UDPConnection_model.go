@@ -3,7 +3,7 @@ package models
 import "net"
 
 type UDPConnection struct {
-	TunnelId			string				`json:"tunnelId"`
+	TunnelId			uint32				`json:"tunnelId"`
 	NetworkVersion		string				`json:"networkVersion"`
 	LeftHost			string 				`json:"left_host"`
 	LeftPort			int 				`json:"left_port"`

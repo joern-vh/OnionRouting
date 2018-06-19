@@ -14,7 +14,7 @@ type UDPConnection struct {
 }
 
 // When Creating Initial, always set writer for left side >> Write back to origin
-func CreateInitialUDPConnection(leftHost string, leftPort int, tunndelId string, networkVersion string) (*models.UDPConnection, error) {
+func CreateInitialUDPConnection(leftHost string, leftPort int, tunndelId uint32, networkVersion string) (*models.UDPConnection, error) {
 	// first, create leftWriter
 	leftWriter, err := createUDPWriter(leftHost, leftPort)
 	if err != nil {
