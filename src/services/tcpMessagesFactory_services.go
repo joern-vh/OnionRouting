@@ -65,7 +65,9 @@ func CreateOnionTunnelReady(onionTunnelReady models.OnionTunnelReady) ([]byte) {
 	message := messageTypeBuf.Bytes()
 
 	// Convert tunnelID to Byte Array
-	message = append(message, []byte(onionTunnelReady.TunnelID)...)
+	tunnelIDBuf := new(bytes.Buffer)
+	binary.Write(tunnelIDBuf, binary.BigEndian, onionTunnelReady.TunnelID)
+	message = append(message, tunnelIDBuf.Bytes()...)
 
 	// Convert destinationHostkey to Byte Array
 	message = append(message, onionTunnelReady.DestinationHostkey...)
@@ -88,7 +90,10 @@ func CreateOnionTunnelIncoming(onionTunnelIncoming models.OnionTunnelIncoming) (
 	message := messageTypeBuf.Bytes()
 
 	// Convert tunnelID to Byte Array
-	message = append(message, []byte(onionTunnelIncoming.TunnelID)...)
+	// Convert tunnelID to Byte Array
+	tunnelIDBuf := new(bytes.Buffer)
+	binary.Write(tunnelIDBuf, binary.BigEndian, onionTunnelIncoming.TunnelID)
+	message = append(message, tunnelIDBuf.Bytes()...)
 
 	// Prepend size of message
 	sizeBuf := new(bytes.Buffer)
@@ -108,7 +113,9 @@ func CreateOnionTunnelDestroy(onionTunnelDestroy models.OnionTunnelDestroy) ([]b
 	message := messageTypeBuf.Bytes()
 
 	// Convert tunnelID to Byte Array
-	message = append(message, []byte(onionTunnelDestroy.TunnelID)...)
+	tunnelIDBuf := new(bytes.Buffer)
+	binary.Write(tunnelIDBuf, binary.BigEndian, onionTunnelDestroy.TunnelID)
+	message = append(message, tunnelIDBuf.Bytes()...)
 
 	// Prepend size of message
 	sizeBuf := new(bytes.Buffer)
@@ -138,7 +145,9 @@ func CreateOnionTunnelError(onionError models.OnionError) ([]byte) {
 	message =  append(message, reservedBuf.Bytes()...)
 
 	// Convert tunnelID to Byte Array
-	message = append(message, []byte(onionError.TunnelID)...)
+	tunnelIDBuf := new(bytes.Buffer)
+	binary.Write(tunnelIDBuf, binary.BigEndian, onionError.TunnelID)
+	message = append(message, tunnelIDBuf.Bytes()...)
 
 
 	// Prepend size of message

@@ -8,27 +8,27 @@ type OnionTunnelBuild struct {
 }
 
 type OnionTunnelReady struct {
-	TunnelID 				string
+	TunnelID 				uint32
 	DestinationHostkey 		[]byte
 }
 
 type OnionTunnelIncoming struct {
-	TunnelID 				string
+	TunnelID 				uint32
 }
 
 type OnionTunnelDestroy struct {
-	TunnelID 				string
+	TunnelID 				uint32
 }
 
 type OnionTunnelData struct {
-	TunnelID 				string
+	TunnelID 				uint32
 	Data 					[]byte
 }
 
 type OnionError struct {
 	RequestType 			uint16
 	Reserved 				uint16
-	TunnelID 				string
+	TunnelID 				uint32
 }
 
 type OnionCover struct {
@@ -39,12 +39,13 @@ type OnionCover struct {
 type ConstructTunnel struct {
 	NetworkVersion			string
 	Port					uint16
+	TunnelID				uint32
 	DestinationAddress 		string
 	DestinationHostkey 		[]byte
 }
 
 type ConfirmTunnelConstruction struct {
 	Port					uint16
-	TunnelID 				string
+	TunnelID 				uint32
 	DestinationHostkey 		[]byte
 }

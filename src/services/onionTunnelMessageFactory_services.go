@@ -6,29 +6,8 @@ import (
 	"net"
 	"log"
 	"models"
+	"time"
 )
-
-/*
-	Build-2:
-		- UDPPort
-		- TunnelID (wird selbst erstellt)
-		- Destination Address
-		- Destination Hostkey
-
-	Ready-2:
-		- Port
-		- TunnelID
-		- (Hostkey)
-
-
-	destinationListener
-	destinationWriter
-	returnListener
-	returnWriter
-
-	Peer checkt ob für die TunnelID noch ein returnWriter gesetzt ist. Falls ja => weiterleiten, ansonsten behalten.
-
-*/
 
 /*
 	Function to create Construct Tunnel Messages. Type: 567.
@@ -63,6 +42,11 @@ func CreateConstructTunnelMessage(constructTunnel models.ConstructTunnel) ([]byt
 	binary.Write(portBuf, binary.BigEndian, constructTunnel.Port)
 	message = append(message, portBuf.Bytes()...)
 
+	// Convert tunnelID to Byte Array
+	tunnelIDBuf := new(bytes.Buffer)
+	binary.Write(tunnelIDBuf, binary.BigEndian, constructTunnel.TunnelID)
+	message = append(message, tunnelIDBuf.Bytes()...)
+
 	// Convert destinationAddress to Byte Array
 	log.Printf("IP: %x\n", []byte(ip))
 	message = append(message, ip...)
@@ -88,7 +72,9 @@ func CreateConfirmTunnelCronstructionMessage(confirmTunnelConstruction models.Co
 	message := messageTypeBuf.Bytes()
 
 	// Convert tunnelID to Byte Array
-	message = append(message, []byte(confirmTunnelConstruction.TunnelID)...)
+	tunnelIDBuf := new(bytes.Buffer)
+	binary.Write(tunnelIDBuf, binary.BigEndian, confirmTunnelConstruction.TunnelID)
+	message = append(message, tunnelIDBuf.Bytes()...)
 
 	// Append destinationHostkey to Message Array
 	message = append(message, confirmTunnelConstruction.DestinationHostkey...)
@@ -102,3 +88,15 @@ func CreateConfirmTunnelCronstructionMessage(confirmTunnelConstruction models.Co
 }
 
 // ToDo: Error Messages.
+
+
+// TunnelID: 32 bits.
+func CreateTunnelID() (uint32){
+	currentTime := time.Now().UnixNano()
+	currentTimeBuf := new(bytes.Buffer)
+
+	binary.Write(currentTimeBuf, binary.BigEndian, currentTime)
+	id := currentTimeBuf.Bytes()[4:8]
+
+	return binary.BigEndian.Uint32(id)
+}

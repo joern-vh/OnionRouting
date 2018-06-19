@@ -70,7 +70,7 @@ func (peer *Peer) StartTCPListening() {
 	CommunicationChannelTCPMessages = make(chan []byte)
 
 	go func() {
-		log.Println("StartTCPListening: Started listenting")
+		log.Println("StartTCPListening: Started listening")
 		for {
 			conn, err := peer.PeerObject.TCPListener.Accept()
 			if err != nil {
@@ -120,8 +120,10 @@ func (peer *Peer) StartUDPListening() {
 	CommunicationChannelUDPErrors = make(chan error)
 	CommunicationChannelUDPMessages = make(chan []byte)
 
+	CreateTunnelID()
+
 	go func() {
-		log.Println("StartUDPListening: Started listenting")
+		log.Println("StartUDPListening: Started listening")
 		buf := make([]byte, 1024)
 		for {
 			n,addr,err := peer.PeerObject.UDPListener.ReadFromUDP(buf)
