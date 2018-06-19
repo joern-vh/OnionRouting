@@ -88,20 +88,23 @@ func handleConstructTunnel(message []byte) {
 	networkVersion := binary.BigEndian.Uint16(message[4:6])
 	onionPort := binary.BigEndian.Uint16(message[6:8])
 
+	tunnelID := binary.BigEndian.Uint16(message[8:12])
+
 	if networkVersion == 0 {
 		networkVersionString = "IPv4"
-		destinationAddress = net.IP(message[8:12]).String()
-		destinationHostkey = message[12:]
+		destinationAddress = net.IP(message[12:16]).String()
+		destinationHostkey = message[16:]
 	} else if networkVersion == 1 {
 		networkVersionString = "IPv6"
-		destinationAddress = net.IP(message[8:24]).String()
-		destinationHostkey = message[24:]
+		destinationAddress = net.IP(message[12:28]).String()
+		destinationHostkey = message[28:]
 	}
 
 	// ToDo: Functionality.
 
 	log.Printf("Network Version: %s\n", networkVersionString)
 	log.Printf("Onion Port: %d\n", onionPort)
+	log.Printf("Tunnel ID: %d\n", tunnelID)
 	log.Printf("Destination Address: %s\n", destinationAddress)
 	log.Printf("Destination Hostkey: %s\n", destinationHostkey)
 }

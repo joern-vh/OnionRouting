@@ -44,7 +44,8 @@ func CreateConstructTunnelMessage(constructTunnel models.ConstructTunnel) ([]byt
 
 	// Convert tunnelID to Byte Array
 	tunnelIDBuf := new(bytes.Buffer)
-	binary.Write(tunnelIDBuf, binary.BigEndian, constructTunnel.TunnelID)
+	newID := CreateTunnelID()
+	binary.Write(tunnelIDBuf, binary.BigEndian, newID)
 	message = append(message, tunnelIDBuf.Bytes()...)
 
 	// Convert destinationAddress to Byte Array
