@@ -58,6 +58,7 @@ func (peer *Peer) StartTCPListening() {
 	// Initialize global communicationChannelTCP
 	CommunicationChannelTCPError = make(chan error)
 	CommunicationChannelTCPMessages = make(chan []byte)
+
 	go func() {
 		log.Println("StartTCPListening: Started listenting")
 		for {

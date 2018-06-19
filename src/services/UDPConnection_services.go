@@ -17,7 +17,7 @@ var CommunicationChannelUDP chan error
 
 
 // createNewUDPConnection creates a new udp connection for a peer
-func CreateNewUDPConnection(port	int, networkVersion string, destinationAddress string, destinationHostKey []byte) (*UDPConnection, error) {
+func CreateNewUDPConnection(port int, networkVersion string, destinationAddress string, destinationHostKey []byte) (*UDPConnection, error) {
 	newUDPConn, err := createUDPConn(port)
 	if err != nil {
 		return nil, errors.New("CreateNewUDPConnection: Error creating conn" + err.Error())

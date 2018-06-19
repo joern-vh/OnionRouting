@@ -10,15 +10,14 @@ import (
 
 )
 
+// Handles TCP Messages retieved from the CommunicationChannelTCPMessages
 func StartTCPController(myPeer *services.Peer) {
 	for msg := range services.CommunicationChannelTCPMessages {
-		log.Println("FICK DICH !!!!!")
 		handleTCPMessage(msg, myPeer)
 	}
 }
 
 func  handleTCPMessage(message []byte, myPeer *services.Peer) error {
-	log.Println("FICK DICH !!!!!2")
 	//var messageTypeByte []byte = message[3:5]
 	messageType := binary.BigEndian.Uint16(message[2:4])
 	fmt.Printf("%d\n", messageType)
@@ -46,6 +45,7 @@ func  handleTCPMessage(message []byte, myPeer *services.Peer) error {
 				log.Println("HandleTCPMessage: Problem creating new UDPConnection, error: " + err.Error())
 			}
 
+			// Append UDPConnection to peer
 			myPeer.AppendUDPConnection(newUDPConnection)
 
 			go func() {
@@ -57,12 +57,6 @@ func  handleTCPMessage(message []byte, myPeer *services.Peer) error {
 					return
 				}
 			}()
-
-			// TODO: Start
-			fmt.Printf("Network Version: %s\n", networkVersionString)
-			fmt.Printf("Onion Port: %d\n", onionPort)
-			fmt.Printf("Destination Address: %s\n", destinationAddress)
-			fmt.Printf("Destination Hostkey: %s\n", destinationHostkey)
 			break
 
 		// ONION TUNNEL READY
