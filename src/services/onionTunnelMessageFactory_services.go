@@ -33,7 +33,7 @@ import (
 /*
 	Function to create Construct Tunnel Messages. Type: 567.
  */
-func CreateConstructTunnelMessage(constructTunnel models.ConstructTunnel) []byte {
+func CreateConstructTunnelMessage(constructTunnel models.ConstructTunnel) ([]byte) {
 	// Message Type
 	messageType := uint16(567)
 
@@ -78,7 +78,7 @@ func CreateConstructTunnelMessage(constructTunnel models.ConstructTunnel) []byte
 	return message
 }
 
-func CreateConfirmTunnelCronstructionMessage(confirmTunnelConstruction models.ConfirmTunnelConstruction) []byte {
+func CreateConfirmTunnelCronstructionMessage(confirmTunnelConstruction models.ConfirmTunnelConstruction) ([]byte) {
 	// Message Type
 	messageType := uint16(567)
 
