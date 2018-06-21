@@ -40,7 +40,7 @@ func CreateNewPeer(config *models.Config) (*Peer, error) {
 	}
 
 	// Create new UDPConn to listen for udp messages
-	newUDPListener, err := createUDPConn()
+	newUDPListener, err := createUDPListener()
 	if err != nil {
 		log.Println("CreatePeer: Problem creating UDP listener, error: ", err)
 		return &Peer{&models.Peer{nil , nil, 0, "", nil, nil, nil}}, err
@@ -97,26 +97,28 @@ func (peer *Peer) StartTCPListening() {
 	}()
 }
 
-// createUDPConn creates the *net.Conn for one peer to listen to UDP messages
-func createUDPConn()  (*net.UDPConn, error){
-	log.Println("createUDPConn: Create a new listener for UDP")
+// createUDPListener creates a new UDP Listener
+func createUDPListener() (*net.UDPConn, error) {
+	log.Println("createUDPListener: Create a new listener for UDP")
+
 	// First, create new port
 	port, err := getFreePort()
+	log.Println("createUDPListener: my port: " + strconv.Itoa(port))
 	if err != nil {
 		return nil, errors.New("createUDPConn: Couldn't create new port, " + err.Error())
 	}
 
-	udpAddr, err := net.ResolveUDPAddr("udp", ":" + strconv.Itoa(port))
+	udpAddr, err := net.ResolveUDPAddr("udp4", ":" + strconv.Itoa(port))
 	if err != nil {
-		return nil, errors.New("createUDPConn: Problem resolving UDP Address: " + err.Error())
+		return nil, errors.New("createUDPListener: Problem resolving UDP Address: " + err.Error())
 	}
 
-	conn, err := net.ListenUDP("udp", udpAddr)
+	listener, err := net.ListenUDP("udp", udpAddr)
 	if err != nil {
-		return nil, errors.New("createUDPConn: Problem creating net.UDPConn: " + err.Error())
+		return nil, errors.New("createTcpListener: Problem creating net.TCPListener: " + err.Error())
 	}
 
-	return conn, nil
+	return listener, nil
 }
 
 // StartUDPListening lets the peer listen for new UDP-messages
@@ -126,17 +128,24 @@ func (peer *Peer) StartUDPListening() {
 	CommunicationChannelUDPErrors = make(chan error)
 	CommunicationChannelUDPMessages = make(chan []byte)
 
+
 	go func() {
 		log.Println("StartUDPListening: Started listening")
 		buf := make([]byte, 1024)
 		for {
 			n,addr,err := peer.PeerObject.UDPListener.ReadFromUDP(buf)
 			if err != nil {
+				if err != nil {
+					log.Println("StartUDPListening: error " + err.Error())
+				}
 				CommunicationChannelUDPErrors <- err
 			}
 			log.Println("StartUDPListening: Message Received ", string(buf[0:n]), " from ",addr)
 
 			CommunicationChannelUDPMessages <- buf[0:n]
+
+			buf2 := make([]byte, 1024)
+			copy(buf2, buf)
 		}
 	}()
 }
