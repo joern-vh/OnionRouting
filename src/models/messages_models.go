@@ -49,3 +49,10 @@ type ConfirmTunnelConstruction struct {
 	TunnelID 				uint32
 	DestinationHostkey 		[]byte
 }
+
+type TunnelInstruction struct {
+	NetworkVersion			string
+	Port					uint16
+	DestinationAddress 		string
+	// Data
+}

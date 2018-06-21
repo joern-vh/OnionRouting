@@ -50,6 +50,11 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 			handleConfirmTunnelConstruction(messageChannel)
 			break
 
+		// TUNNEL INSTRUCTION
+		case 569:
+			handleTunnelInstruction(messageChannel)
+			break
+
 		// ToDo: Handle Error Messages while construction is ongoing.
 
 		default:
@@ -137,4 +142,26 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel) 
 	log.Printf("Onion Port: %s\n", onionPort)
 	log.Printf("Tunnel ID: %s\n", tunnelID)
 	log.Printf("Destination Hostkey: %s\n", destinationHostkey)
+}
+
+func handleTunnelInstruction(messageChannel services.TCPMessageChannel) {
+	var networkVersionString string
+	var destinationAddress string
+
+	networkVersion := binary.BigEndian.Uint16(messageChannel.Message[4:6])
+	onionPort := binary.BigEndian.Uint16(messageChannel.Message[6:8])
+
+	if networkVersion == 0 {
+		networkVersionString = "IPv4"
+		destinationAddress = net.IP(messageChannel.Message[8:12]).String()
+	} else if networkVersion == 1 {
+		networkVersionString = "IPv6"
+		destinationAddress = net.IP(messageChannel.Message[8:24]).String()
+	}
+
+	// ToDo: Functionality.
+
+	log.Printf("Network Version: %s\n", networkVersionString)
+	log.Printf("Onion Port: %d\n", onionPort)
+	log.Printf("Destination Address: %s\n", destinationAddress)
 }
