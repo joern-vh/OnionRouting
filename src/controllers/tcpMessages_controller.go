@@ -125,17 +125,7 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel) (*models.U
 	if err != nil {
 		return nil, errors.New("handleConstructTunnel: " + err.Error())
 	}
-
-	n, err := newUDPConnection.LeftWriter.Write([]byte(": Hello from client"))
-	n1, err := newUDPConnection.LeftWriter.Write([]byte(": Hello from client 2"))
-	n2, err := newUDPConnection.LeftWriter.Write([]byte(": Hello from client 3"))
-	n3, err := newUDPConnection.LeftWriter.Write([]byte(": Hello from client 4"))
-
-	if err != nil {
-		log.Println(err.Error())
-	}
-	log.Println(n, n1, n2, n3)
-
+	
 	return newUDPConnection, nil
 }
 
