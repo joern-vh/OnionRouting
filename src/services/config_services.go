@@ -39,7 +39,7 @@ func NewConfigObject() (*models.Config, error) {
 		return &models.Config{0, "0", nil, nil}, errors.New("NewConfigObject: Couldn't parse P2PPort")
 	}
 
-	privateKey, publicKey, err := parseKeys(config["onion"]["hostkey"])
+	privateKey, publicKey, err := ParseKeys(config["onion"]["hostkey"])
 	if err != nil {
 		return &models.Config{0, "0", nil, nil}, errors.New("NewConfigObject: Couldn't parse private key, error: " + err.Error())
 	}
