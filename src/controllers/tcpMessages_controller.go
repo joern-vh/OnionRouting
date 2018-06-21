@@ -11,9 +11,13 @@ import (
 )
 
 func StartTCPController(myPeer *services.Peer) {
-	for msg := range services.CommunicationChannelTCPMessages {
-		handleTCPMessage(msg, myPeer)
-	}
+	log.Println("StartTCPController: Started TCP Controller")
+	go func() {
+		for msg := range services.CommunicationChannelTCPMessages {
+			handleTCPMessage(msg, myPeer)
+		}
+	}()
+
 }
 
 func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *services.Peer) error {
@@ -122,14 +126,15 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel) (*models.U
 		return nil, errors.New("handleConstructTunnel: " + err.Error())
 	}
 
-	for i := 0; i < 10 ; i++  {
-		n, err := newUDPConnection.LeftWriter.Write([]byte(": Hello from client"))
-		if err != nil {
-			log.Println(err)
-		}
+	n, err := newUDPConnection.LeftWriter.Write([]byte(": Hello from client"))
+	n1, err := newUDPConnection.LeftWriter.Write([]byte(": Hello from client 2"))
+	n2, err := newUDPConnection.LeftWriter.Write([]byte(": Hello from client 3"))
+	n3, err := newUDPConnection.LeftWriter.Write([]byte(": Hello from client 4"))
 
-		log.Println("NNNNNNN", n)
+	if err != nil {
+		log.Println(err.Error())
 	}
+	log.Println(n, n1, n2, n3)
 
 	return newUDPConnection, nil
 }

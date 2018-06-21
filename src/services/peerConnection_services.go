@@ -97,33 +97,13 @@ func (peer *Peer) StartTCPListening() {
 	}()
 }
 
-// createUDPConn creates the *net.Conn for one peer to listen to UDP messages
-func createUDPConn()  (*net.UDPConn, error){
-	log.Println("createUDPConn: Create a new listener for UDP")
-	// First, create new port
-	port, err := getFreePort()
-	if err != nil {
-		return nil, errors.New("createUDPConn: Couldn't create new port, " + err.Error())
-	}
-
-	udpAddr, err := net.ResolveUDPAddr("udp", ":" + strconv.Itoa(port))
-	if err != nil {
-		return nil, errors.New("createUDPConn: Problem resolving UDP Address: " + err.Error())
-	}
-
-	conn, err := net.ListenUDP("udp", udpAddr)
-	if err != nil {
-		return nil, errors.New("createUDPConn: Problem creating net.UDPConn: " + err.Error())
-	}
-
-	return conn, nil
-}
-
+// createUDPListener creates a new UDP Listener
 func createUDPListener() (*net.UDPConn, error) {
 	log.Println("createUDPListener: Create a new listener for UDP")
 
 	// First, create new port
 	port, err := getFreePort()
+	log.Println("createUDPListener: my port: " + strconv.Itoa(port))
 	if err != nil {
 		return nil, errors.New("createUDPConn: Couldn't create new port, " + err.Error())
 	}
@@ -155,6 +135,9 @@ func (peer *Peer) StartUDPListening() {
 		for {
 			n,addr,err := peer.PeerObject.UDPListener.ReadFromUDP(buf)
 			if err != nil {
+				if err != nil {
+					log.Println("StartUDPListening: error " + err.Error())
+				}
 				CommunicationChannelUDPErrors <- err
 			}
 			log.Println("StartUDPListening: Message Received ", string(buf[0:n]), " from ",addr)
@@ -165,8 +148,6 @@ func (peer *Peer) StartUDPListening() {
 			copy(buf2, buf)
 		}
 	}()
-
-	log.Println("StartUDPListening: Finished listening")
 }
 
 // SendMessage gets address, port and message(type byte) to send it to one peer

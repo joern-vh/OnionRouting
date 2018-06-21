@@ -1,13 +1,20 @@
 package controllers
 
-import "services"
+import (
+	"services"
+	"log"
+)
 
 func StartUDPController(myPeer *services.Peer) {
-	for msg := range services.CommunicationChannelUDPMessages {
-		handleUDPMessage(msg, myPeer)
-	}
+	log.Println("StartUDPController: Started UDP Controller")
+
+	go func() {
+		for msg := range services.CommunicationChannelUDPMessages {
+			handleUDPMessage(msg, myPeer)
+		}
+	}()
 }
 
 func handleUDPMessage(message []byte, myPeer *services.Peer) {
-	
+	log.Println("handleUDPMessage: ", message)
 }
