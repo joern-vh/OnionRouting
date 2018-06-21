@@ -25,7 +25,7 @@ func CreateInitialUDPConnection(leftHost string, leftPort int, tunndelId uint32,
 }
 
 // Creates a new writer for a given ip and port
-func createUDPWriter(destinationAddress string, destinationPort int) (*net.Conn, error){
+func createUDPWriter(destinationAddress string, destinationPort int) (net.Conn, error){
 	newConn, err := net.Dial("udp", destinationAddress + ":" + strconv.Itoa(destinationPort))
 	if err != nil {
 		return nil, errors.New("createUDPWriter: Error while creating new wirter, error: " + err.Error())
@@ -33,6 +33,6 @@ func createUDPWriter(destinationAddress string, destinationPort int) (*net.Conn,
 
 	log.Println("createUDPWriter: Created new writer for " + destinationAddress)
 
-	return &newConn, nil
+	return newConn, nil
 }
 

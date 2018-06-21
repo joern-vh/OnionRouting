@@ -16,7 +16,7 @@ func StartTCPController(myPeer *services.Peer) {
 	}
 }
 
-func  handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *services.Peer) error {
+func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *services.Peer) error {
 	messageType := binary.BigEndian.Uint16(messageChannel.Message[2:4])
 
 	switch messageType {
@@ -38,6 +38,7 @@ func  handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *servic
 			}
 
 			myPeer.AppendNewUDPConnection(newUDPConnection)
+			//myPeer.PeerObject.UDPConnections
 			break
 
 		// CONFIRM TUNNEL CONSTRUCTION
@@ -119,6 +120,15 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel) (*models.U
 	newUDPConnection, err := services.CreateInitialUDPConnection(ipAdd, int(onionPort), tunnelID, networkVersionString)
 	if err != nil {
 		return nil, errors.New("handleConstructTunnel: " + err.Error())
+	}
+
+	for i := 0; i < 10 ; i++  {
+		n, err := newUDPConnection.LeftWriter.Write([]byte(": Hello from client"))
+		if err != nil {
+			log.Println(err)
+		}
+
+		log.Println("NNNNNNN", n)
 	}
 
 	return newUDPConnection, nil
