@@ -63,8 +63,11 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 			 } else {
 			 	// no right writer exists, handle data now to send the command
 			 	// first, determine the command out of data and execute the function
-			 	/*data := messageChannel.Message[4:]
-			 	command := binary.BigEndian.Uint16(data[0:2])
+			 	data := messageChannel.Message[4:]
+
+			 	log.Println(string(data))
+
+			 	/*command := binary.BigEndian.Uint16(data[0:2])
 
 				 switch command {
 				 case 567:*/
@@ -121,8 +124,9 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *s
 	}
 
 	//Construct Tunnel Message
-
-	constructTunnelMessage := models.ConstructTunnel{NetworkVersion: networkVersionString, DestinationHostkey: destinationHostkey, DestinationAddress: destinationAddress, Port: uint16(myPeer.PeerObject.UDPPort)}
+	newTunnelID := services.CreateTunnelID()
+	log.Println("NewTunnelID: ", newTunnelID)
+	constructTunnelMessage := models.ConstructTunnel{NetworkVersion: networkVersionString, DestinationHostkey: destinationHostkey, TunnelID: newTunnelID, DestinationAddress: destinationAddress, Port: uint16(myPeer.PeerObject.UDPPort)}
 	message := services.CreateConstructTunnelMessage(constructTunnelMessage)
 	log.Println(message)
 
@@ -189,27 +193,29 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *se
 		return nil, errors.New("handleConstructTunnel: " + err.Error())
 	}
 
-	// If everything worked out, send confirmTunnelConstuction back
+	// If everything worked out, send confirmTunnelConstruction back
 	confirmTunnelConstruction := models.ConfirmTunnelConstruction{TunnelID: tunnelID, Port: uint16(myPeer.PeerObject.UDPPort), DestinationHostkey: []byte("Key")}
 	message := services.CreateConfirmTunnelCronstructionMessage(confirmTunnelConstruction)
 
 	myPeer.PeerObject.TCPConnections[tunnelID].LeftWriter.TCPWriter.Write(message)
+
 	return newUDPConnection, nil
 }
 
 func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, myPeer *services.Peer) {
+	log.Println("CONFIRM RECEIVED")
 	onionPort := binary.BigEndian.Uint16(messageChannel.Message[4:6])
 	tunnelID := binary.BigEndian.Uint32(messageChannel.Message[6:10])
 	destinationHostkey := messageChannel.Message[10:]
 
-
-	// NOw, just for tests, send a forward to a new peer
+	// Now, just for tests, send a forward to a new peer
 	tunnelInstructionMessage := models.TunnelInstruction{TunnelID: tunnelID, Data: []byte("Some Data")}
 	message := services.CreateTunnelInstruction(tunnelInstructionMessage)
 
+	log.Println(myPeer.PeerObject.TCPConnections[tunnelID].RightWriter)
 	myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write(message)
 
-	log.Printf("Onion Port: %s\n", onionPort)
-	log.Printf("Tunnel ID: %s\n", tunnelID)
+	log.Printf("Onion Port: %d\n", onionPort)
+	log.Printf("Tunnel ID: %d\n", tunnelID)
 	log.Printf("Destination Hostkey: %s\n", destinationHostkey)
 }
