@@ -72,6 +72,11 @@ func CreateConfirmTunnelCronstructionMessage(confirmTunnelConstruction models.Co
 	binary.Write(messageTypeBuf, binary.BigEndian, messageType)
 	message := messageTypeBuf.Bytes()
 
+	// Convert port to Byte Array
+	portBuf := new(bytes.Buffer)
+	binary.Write(portBuf, binary.BigEndian, confirmTunnelConstruction.Port)
+	message = append(message, portBuf.Bytes()...)
+
 	// Convert tunnelID to Byte Array
 	tunnelIDBuf := new(bytes.Buffer)
 	binary.Write(tunnelIDBuf, binary.BigEndian, confirmTunnelConstruction.TunnelID)

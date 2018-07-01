@@ -14,6 +14,7 @@ func StartTCPController(myPeer *services.Peer) {
 	log.Println("StartTCPController: Started TCP Controller")
 	go func() {
 		for msg := range services.CommunicationChannelTCPMessages {
+			log.Println("Yes, i got a new messagebitch")
 			handleTCPMessage(msg, myPeer)
 		}
 	}()
@@ -22,6 +23,7 @@ func StartTCPController(myPeer *services.Peer) {
 
 func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *services.Peer) error {
 	messageType := binary.BigEndian.Uint16(messageChannel.Message[2:4])
+	log.Println("Messagetype: ", messageType)
 
 	switch messageType {
 		// ONION TUNNEL BUILD
@@ -36,6 +38,7 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 
 		// CONSTRUCT TUNNEL
 		case 567:
+			log.Println("handleConstructTunnel")
 			newUDPConnection, err := handleConstructTunnel(messageChannel, myPeer)
 			if err != nil {
 				return err
@@ -51,10 +54,11 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 
 		// TUNNEL INSTRUCTION
 		case 569:
-			log.Println("Ja, hier war ich!")
+			log.Println("Forwarding!!!")
 
 			tunnelID := binary.BigEndian.Uint32(messageChannel.Message[8:12])
-
+			log.Println("Tunnel id", tunnelID)
+			log.Println(myPeer.PeerObject.TCPConnections[tunnelID])
 			 // First, check if there is a right peer set for this tunnel id, if not decrypt data and exeute, if yes, simply forward it
 			 // simply forward
 			 if myPeer.PeerObject.TCPConnections[tunnelID].RightWriter != nil {
@@ -121,10 +125,8 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *s
 	}
 
 	//Construct Tunnel Message
-
 	constructTunnelMessage := models.ConstructTunnel{NetworkVersion: networkVersionString, DestinationHostkey: destinationHostkey, DestinationAddress: destinationAddress, Port: uint16(myPeer.PeerObject.UDPPort)}
 	message := services.CreateConstructTunnelMessage(constructTunnelMessage)
-	log.Println(message)
 
 	newTCPWriter, err := myPeer.CreateTCPWriter(destinationAddress)
 	if err != nil {

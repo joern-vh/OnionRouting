@@ -81,20 +81,31 @@ func (peer *Peer) StartTCPListening() {
 			conn, err := peer.PeerObject.TCPListener.Accept()
 			if err != nil {
 				//return errors.New("StartTCPListening: Couldn't start accepting new connctions: " + err.Error())
-				continue
+				log.Fatal(err)
+				//continue
 			}
 
-			// Reader.Read() saves content received in newMessage
-			newMessage := make([]byte, 64)
-			amountBytesRead, err := bufio.NewReader(conn).Read(newMessage)
-			if err != nil {
-				CommunicationChannelTCPErrors <- err
-			}
-			log.Println("StartTCPListening: Received new message with ", amountBytesRead, " bytes from ", conn.RemoteAddr().String())
-			// Pass newMessage into TCPMessageChannel
-			CommunicationChannelTCPMessages <- TCPMessageChannel{newMessage, conn.RemoteAddr().String()}
+			// Pass each message into the right channel
+			go handleMessages(conn)
 		}
 	}()
+}
+
+// Passes each message into the right channel
+func handleMessages (conn net.Conn) {
+	reader := bufio.NewReader(conn)
+	defer conn.Close()
+
+	for {
+		message, err := reader.ReadBytes('\n')
+		if err != nil {
+			CommunicationChannelTCPErrors <- err
+		}
+
+		log.Println("New message ", message)
+		// Pass newMessage into TCPMessageChannel
+		CommunicationChannelTCPMessages <- TCPMessageChannel{message, conn.RemoteAddr().String()}
+	}
 }
 
 // createUDPListener creates a new UDP Listener
