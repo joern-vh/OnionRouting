@@ -36,18 +36,18 @@ func CreateNewPeer(config *models.Config) (*Peer, error) {
 	newTCPListener, err := createTCPListener(config.P2P_Port)
 	if err != nil {
 		log.Println("CreatePeer: Problem creating TCP listener, error: ", err)
-		return &Peer{&models.Peer{nil , nil, 0, "", nil, nil, nil}}, err
+		return &Peer{&models.Peer{nil , nil, 0, "", nil, nil, nil, nil}}, err
 	}
 
 	// Create new UDPConn to listen for udp messages
 	newUDPListener, err := createUDPListener()
 	if err != nil {
 		log.Println("CreatePeer: Problem creating UDP listener, error: ", err)
-		return &Peer{&models.Peer{nil , nil, 0, "", nil, nil, nil}}, err
+		return &Peer{&models.Peer{nil , nil, 0, "", nil, nil, nil, nil}}, err
 	}
 
 	// Create new peer
-	newPeer := &Peer{&models.Peer{newTCPListener, newUDPListener,  config.P2P_Port, config.P2P_Hostname, config.PrivateKey, config.PublicKey, make(map[uint32] *models.UDPConnection)}}
+	newPeer := &Peer{&models.Peer{newTCPListener, newUDPListener,  config.P2P_Port, config.P2P_Hostname, config.PrivateKey, config.PublicKey, make(map[uint32] *models.UDPConnection), make(map[string] *models.TCPWriter)}}
 
 	return newPeer, nil
 }
@@ -148,6 +148,20 @@ func (peer *Peer) StartUDPListening() {
 			copy(buf2, buf)
 		}
 	}()
+}
+
+func (peer *Peer) CreateTCPWriter (destinationIP string) (*models.TCPWriter, error) {
+	conn, err := net.Dial("tcp", destinationIP + ":3000")
+	if err != nil {
+		return nil, errors.New("createTCPWriter: Error while dialing to destination, error: " + err.Error())
+	}
+
+	return &models.TCPWriter{destinationIP, 3000, conn}, nil
+
+}
+
+func (peer *Peer) AppendNewTCPWriter(myTCPConnection  *models.TCPWriter) {
+	peer.PeerObject.TCPWriters[myTCPConnection.DestinationIP] = myTCPConnection
 }
 
 // SendMessage gets address, port and message(type byte) to send it to one peer

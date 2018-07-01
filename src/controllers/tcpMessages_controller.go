@@ -36,9 +36,9 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 
 		// CONSTRUCT TUNNEL
 		case 567:
-			newUDPConnection, err := handleConstructTunnel(messageChannel)
+			newUDPConnection, err := handleConstructTunnel(messageChannel, myPeer)
 			if err != nil {
-				return errors.New("handleTCPMessage: " + err.Error())
+				return err
 			}
 
 			myPeer.AppendNewUDPConnection(newUDPConnection)
@@ -52,7 +52,12 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 
 		// TUNNEL INSTRUCTION
 		case 569:
-			handleTunnelInstruction(messageChannel)
+			 // TODO: Switch case to distinguish between codes >> Write it into new forwardTCP Channel and let a handler write
+			// 1. Create new righter and append to peer
+			// 2. Send message
+			// TODO function for switch
+
+
 			break
 
 		// ToDo: Handle Error Messages while construction is ongoing.
@@ -98,7 +103,7 @@ func handleOnionTunnelDestroy(messageChannel services.TCPMessageChannel) {
 	log.Printf("Tunnel ID: %s\n", tunnelID)
 }
 
-func handleConstructTunnel(messageChannel services.TCPMessageChannel) (*models.UDPConnection, error) {
+func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *services.Peer) (*models.UDPConnection, error) {
 	var networkVersionString string
 	var destinationAddress string
 	var destinationHostkey []byte
@@ -125,12 +130,22 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel) (*models.U
 
 	// First, get ip address of sender
 	ipAdd := services.GetIPOutOfAddr(messageChannel.Host)
+
+	// Then, create the TCPWriter left
+	newTCPWriter, err := myPeer.CreateTCPWriter(ipAdd)
+	if err != nil {
+		return nil, errors.New("Error creating tcp writer, error: " + err.Error())
+	}
+
+	myPeer.AppendNewTCPWriter(newTCPWriter)
 	//  Now, create new UDP Connection with this "sender" as left side
 	newUDPConnection, err := services.CreateInitialUDPConnection(ipAdd, int(onionPort), tunnelID, networkVersionString)
 	if err != nil {
 		return nil, errors.New("handleConstructTunnel: " + err.Error())
 	}
-	
+
+	// If everything worked out, send confirmTunnelConstuction back
+	myPeer.PeerObject.TCPWriters[ipAdd].TCPWriter.Write([]byte("Fuck yeah, I've build a UDP connection to you"))
 	return newUDPConnection, nil
 }
 
@@ -144,9 +159,10 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel) 
 	log.Printf("Destination Hostkey: %s\n", destinationHostkey)
 }
 
-func handleTunnelInstruction(messageChannel services.TCPMessageChannel) {
+func handleTunnelInstruction(messageChannel services.TCPMessageChannel, myPeer *services.Peer) {
 	var networkVersionString string
-	var destinationAddress string
+	var destinationAddress string // without port ?!
+	// TODO: Add port where destination peer is listening
 
 	networkVersion := binary.BigEndian.Uint16(messageChannel.Message[4:6])
 	onionPort := binary.BigEndian.Uint16(messageChannel.Message[6:8])
@@ -159,9 +175,13 @@ func handleTunnelInstruction(messageChannel services.TCPMessageChannel) {
 		destinationAddress = net.IP(messageChannel.Message[8:24]).String()
 	}
 
-	// ToDo: Functionality.
+	// ToDo: Functionality: Create tcp right writer and left righter for origin and final receiver
+	// Remove contstruct code and put it into a new function and put it into the switch case
+	// Create TCPWriter for next destiantion now channel
+	//myPeer.CreateTCPWriter(destinationAddress, int(onionPort))
 
 	log.Printf("Network Version: %s\n", networkVersionString)
 	log.Printf("Onion Port: %d\n", onionPort)
 	log.Printf("Destination Address: %s\n", destinationAddress)
 }
+

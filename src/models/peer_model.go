@@ -15,4 +15,11 @@ type Peer struct {
 	PrivateKey		*rsa.PrivateKey					`json:"private_key"`
 	PublicKey		*rsa.PublicKey 					`json:"public_key"`
 	UDPConnections	map[uint32]*UDPConnection 		`json:"udp_connections"`
+	TCPWriters		map[string]*TCPWriter 			`json:"tcp_writers"`
+}
+
+type TCPWriter struct {
+	DestinationIP		string		`json:"destination_ip"`
+	DestinationPort		int			`json:"destination_port"`
+	TCPWriter			net.Conn 	`json:"tcp_writer"`
 }
