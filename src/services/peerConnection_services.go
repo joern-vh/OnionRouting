@@ -47,7 +47,7 @@ func CreateNewPeer(config *models.Config) (*Peer, error) {
 	}
 
 	// Create new peer
-	newPeer := &Peer{&models.Peer{newTCPListener, newUDPListener,  config.P2P_Port, config.P2P_Hostname, config.PrivateKey, config.PublicKey, make(map[uint32] *models.UDPConnection), make(map[string] *models.TCPWriter)}}
+	newPeer := &Peer{&models.Peer{newTCPListener, newUDPListener,  config.P2P_Port, config.P2P_Hostname, config.PrivateKey, config.PublicKey, make(map[uint32] *models.UDPConnection), make(map[uint32] *models.TCPConnection)}}
 
 	return newPeer, nil
 }
@@ -157,11 +157,11 @@ func (peer *Peer) CreateTCPWriter (destinationIP string) (*models.TCPWriter, err
 	}
 
 	return &models.TCPWriter{destinationIP, 3000, conn}, nil
-
 }
 
-func (peer *Peer) AppendNewTCPWriter(myTCPConnection  *models.TCPWriter) {
-	peer.PeerObject.TCPWriters[myTCPConnection.DestinationIP] = myTCPConnection
+// Creates a new TCPConnection for the peer with the left writer already set
+func (peer *Peer) CreateInitialTCPConnection(tunnelId uint32, leftWriter *models.TCPWriter) {
+	peer.PeerObject.TCPConnections[tunnelId] = &models.TCPConnection{tunnelId, leftWriter, nil}
 }
 
 // SendMessage gets address, port and message(type byte) to send it to one peer

@@ -15,7 +15,14 @@ type Peer struct {
 	PrivateKey		*rsa.PrivateKey					`json:"private_key"`
 	PublicKey		*rsa.PublicKey 					`json:"public_key"`
 	UDPConnections	map[uint32]*UDPConnection 		`json:"udp_connections"`
-	TCPWriters		map[string]*TCPWriter 			`json:"tcp_writers"`
+	TCPConnections	map[uint32]*TCPConnection 		`json:"tcp_writers"`
+}
+
+// Identify by id in hashmap
+type TCPConnection struct {
+	TunnelId		uint32 			`json:"tunnel_id"`
+	LeftWriter		*TCPWriter 		`json:"left_writer"`
+	RightWriter		*TCPWriter 		`json:"right_writer"`
 }
 
 type TCPWriter struct {

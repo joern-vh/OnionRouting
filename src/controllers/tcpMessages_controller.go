@@ -137,7 +137,9 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *se
 		return nil, errors.New("Error creating tcp writer, error: " + err.Error())
 	}
 
-	myPeer.AppendNewTCPWriter(newTCPWriter)
+	// Append the new TCPWriter as LeftTCPWriter to the TCP Connection
+	myPeer.CreateInitialTCPConnection(tunnelID, newTCPWriter)
+
 	//  Now, create new UDP Connection with this "sender" as left side
 	newUDPConnection, err := services.CreateInitialUDPConnection(ipAdd, int(onionPort), tunnelID, networkVersionString)
 	if err != nil {
@@ -145,7 +147,7 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *se
 	}
 
 	// If everything worked out, send confirmTunnelConstuction back
-	myPeer.PeerObject.TCPWriters[ipAdd].TCPWriter.Write([]byte("Fuck yeah, I've build a UDP connection to you"))
+	myPeer.PeerObject.TCPConnections[tunnelID].LeftWriter.TCPWriter.Write([]byte("Fuck yeah, I've build a UDP connection to you"))
 	return newUDPConnection, nil
 }
 
