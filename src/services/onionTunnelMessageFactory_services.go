@@ -97,6 +97,11 @@ func CreateTunnelInstruction(tunnelInstruction *models.TunnelInstruction) ([]byt
 	binary.Write(messageTypeBuf, binary.BigEndian, messageType)
 	message := messageTypeBuf.Bytes()
 
+	// Convert command to Byte array
+	commandBuf := new(bytes.Buffer)
+	binary.Write(commandBuf, binary.BigEndian, tunnelInstruction.Command)
+	message = append(message, commandBuf.Bytes()...)
+
 	/*****
 		Reserved and networkVersion
 	 	Convert networkVersion to Byte Array
@@ -113,6 +118,11 @@ func CreateTunnelInstruction(tunnelInstruction *models.TunnelInstruction) ([]byt
 	}
 	message = append(message, networkVersionBuf.Bytes()...)
 
+	// Convert tunnelID to Byte Array
+	tunnelIDBuf := new(bytes.Buffer)
+	binary.Write(tunnelIDBuf, binary.BigEndian, tunnelInstruction.TunnelID)
+	message = append(message, tunnelIDBuf.Bytes()...)
+
 	// Convert port to Byte Array
 	portBuf := new(bytes.Buffer)
 	binary.Write(portBuf, binary.BigEndian, tunnelInstruction.Port)
@@ -122,7 +132,8 @@ func CreateTunnelInstruction(tunnelInstruction *models.TunnelInstruction) ([]byt
 	log.Printf("IP: %x\n", []byte(ip))
 	message = append(message, ip...)
 
-	// ToDo: Append some kind of (encrypted) Data.
+	// ToDo: Encrypt Data.
+	message = append(message, tunnelInstruction.Data...)
 
 	// Prepend size of message
 	sizeBuf := new(bytes.Buffer)
