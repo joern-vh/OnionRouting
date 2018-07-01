@@ -55,8 +55,10 @@ func CreateConstructTunnelMessage(constructTunnel models.ConstructTunnel) ([]byt
 	// Append destinationHostkey to Message Array
 	message = append(message, constructTunnel.DestinationHostkey...)
 
+	log.Println("KEY SIZE: ", len(constructTunnel.DestinationHostkey))
+
 	// Append Delimiter
-	message = append(message, []byte("\n")...)
+	message = append(message, []byte("\r\n")...)
 
 	// Prepend size of message
 	sizeBuf := new(bytes.Buffer)
@@ -84,7 +86,7 @@ func CreateConfirmTunnelCronstructionMessage(confirmTunnelConstruction models.Co
 	message = append(message, confirmTunnelConstruction.DestinationHostkey...)
 
 	// Append Delimiter
-	message = append(message, []byte("\n")...)
+	message = append(message, []byte("\r\n")...)
 
 	// Prepend size of message
 	sizeBuf := new(bytes.Buffer)
@@ -112,7 +114,7 @@ func CreateTunnelInstruction(tunnelInstruction models.TunnelInstruction) ([]byte
 	message = append(message, tunnelInstruction.Data...)
 
 	// Append Delimiter
-	message = append(message, []byte("\n")...)
+	message = append(message, []byte("\r\n")...)
 
 	// Prepend size of message
 	sizeBuf := new(bytes.Buffer)

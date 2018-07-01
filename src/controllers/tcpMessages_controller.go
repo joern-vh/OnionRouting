@@ -8,6 +8,7 @@ import (
 	"services"
 
 	"models"
+	"fmt"
 )
 
 func StartTCPController(myPeer *services.Peer) {
@@ -113,6 +114,8 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *s
 	networkVersion := binary.BigEndian.Uint16(messageChannel.Message[4:6])
 	onionPort := binary.BigEndian.Uint16(messageChannel.Message[6:8])
 
+	fmt.Println("SIZE OF ONION TUNNEL BUILD: ", len(messageChannel.Message))
+
 	if networkVersion == 0 {
 		networkVersionString = "IPv4"
 		destinationAddress = net.IP(messageChannel.Message[8:12]).String()
@@ -123,10 +126,12 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *s
 		destinationHostkey = messageChannel.Message[24:]
 	}
 
+	log.Println(destinationHostkey)
+
 	//Construct Tunnel Message
 	newTunnelID := services.CreateTunnelID()
 	log.Println("NewTunnelID: ", newTunnelID)
-	constructTunnelMessage := models.ConstructTunnel{NetworkVersion: networkVersionString, DestinationHostkey: destinationHostkey, TunnelID: newTunnelID, DestinationAddress: destinationAddress, Port: uint16(myPeer.PeerObject.UDPPort)}
+	constructTunnelMessage := models.ConstructTunnel{NetworkVersion: networkVersionString, DestinationHostkey: []byte("KEY"), TunnelID: newTunnelID, DestinationAddress: destinationAddress, Port: uint16(myPeer.PeerObject.UDPPort)}
 	message := services.CreateConstructTunnelMessage(constructTunnelMessage)
 	log.Println(message)
 
@@ -136,7 +141,9 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *s
 	}
 
 	myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID] = &models.TCPConnection{constructTunnelMessage.TunnelID, nil, newTCPWriter}
-	myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID].RightWriter.TCPWriter.Write(message)
+	n, _ := myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID].RightWriter.TCPWriter.Write(message)
+
+	log.Println("Size: ", n)
 
 	log.Printf("Network Version: %s\n", networkVersionString)
 	log.Printf("Onion Port: %d\n", onionPort)
@@ -206,7 +213,7 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *se
 
 func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, myPeer *services.Peer) {
 	log.Println("CONFIRM RECEIVED")
-	endOfMessage := len(messageChannel.Message) -3
+	endOfMessage := len(messageChannel.Message) - 3
 
 	onionPort := binary.BigEndian.Uint16(messageChannel.Message[4:6])
 	tunnelID := binary.BigEndian.Uint32(messageChannel.Message[6:10])
