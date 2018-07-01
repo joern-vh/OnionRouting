@@ -26,7 +26,7 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 	switch messageType {
 		// ONION TUNNEL BUILD
 		case 560:
-			handleOnionTunnelBuild(messageChannel)
+			handleOnionTunnelBuild(messageChannel, myPeer)
 			break
 
 		// ONION TUNNEL DESTROY
@@ -64,7 +64,7 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 	return nil
 }
 
-func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel) {
+func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *services.Peer) {
 	var networkVersionString string
 	var destinationAddress string
 	var destinationHostkey []byte
@@ -82,9 +82,12 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel) {
 		destinationHostkey = messageChannel.Message[24:]
 	}
 
+	//Construct Tunnel Message
+
+	constructTunnelMessage := models.ConstructTunnel{NetworkVersion: networkVersionString, DestinationHostkey: destinationHostkey, DestinationAddress: destinationAddress, Port: myPeer.PeerObject.UDPPort}
+	message := services.CreateConstructTunnelMessage(constructTunnelMessage)
 
 
-	// ToDo: Functionality.
 
 	log.Printf("Network Version: %s\n", networkVersionString)
 	log.Printf("Onion Port: %d\n", onionPort)
@@ -145,31 +148,15 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel) 
 }
 
 func handleTunnelInstruction(messageChannel services.TCPMessageChannel) {
-	var networkVersionString string
-	var destinationAddress string
 	var data []byte
 
 	command := binary.BigEndian.Uint16(messageChannel.Message[4:6])
-	networkVersion := binary.BigEndian.Uint16(messageChannel.Message[6:8])
 	tunnelID := binary.BigEndian.Uint32(messageChannel.Message[8:12])
-	onionPort := binary.BigEndian.Uint16(messageChannel.Message[12:14])
-
-	if networkVersion == 0 {
-		networkVersionString = "IPv4"
-		destinationAddress = net.IP(messageChannel.Message[14:18]).String()
-		data = messageChannel.Message[18:]
-	} else if networkVersion == 1 {
-		networkVersionString = "IPv6"
-		destinationAddress = net.IP(messageChannel.Message[14:30]).String()
-		data = messageChannel.Message[30:]
-	}
+	data = messageChannel.Message[12:]
 
 	// ToDo: Functionality.
 
 	log.Printf("Command: %d\n", command)
 	log.Printf("Tunnel ID: %d\n", tunnelID)
-	log.Printf("Onion Port: %d\n", onionPort)
-	log.Printf("Network Version: %s\n", networkVersionString)
-	log.Printf("Destination Address: %s\n", destinationAddress)
 	log.Printf("Data: %x\n", data)
 }

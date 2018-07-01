@@ -52,13 +52,10 @@ type ConfirmTunnelConstruction struct {
 
 type TunnelInstruction struct {
 	Command					uint16
-	NetworkVersion			string
 	TunnelID 				uint32
-	Port					uint16
-	DestinationAddress 		string
 	Data					[]byte
 }
 
 type ExchangeKey struct {
-
+	PublicKey				[]byte
 }

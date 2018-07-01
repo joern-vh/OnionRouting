@@ -88,7 +88,7 @@ func CreateConfirmTunnelCronstructionMessage(confirmTunnelConstruction models.Co
 	return message
 }
 
-func CreateTunnelInstruction(tunnelInstruction *models.TunnelInstruction) ([]byte) {
+func CreateTunnelInstruction(tunnelInstruction models.TunnelInstruction) ([]byte) {
 	// Message Type
 	messageType := uint16(569)
 
@@ -102,35 +102,10 @@ func CreateTunnelInstruction(tunnelInstruction *models.TunnelInstruction) ([]byt
 	binary.Write(commandBuf, binary.BigEndian, tunnelInstruction.Command)
 	message = append(message, commandBuf.Bytes()...)
 
-	/*****
-		Reserved and networkVersion
-	 	Convert networkVersion to Byte Array
-		Set to 0 if IPv4. Set to 1 if IPv6
-	*****/
-	networkVersionBuf := new(bytes.Buffer)
-	ip := net.ParseIP(tunnelInstruction.DestinationAddress)
-	if tunnelInstruction.NetworkVersion == "IPv4"{
-		binary.Write(networkVersionBuf, binary.BigEndian, uint16(0))
-		ip = ip.To4()
-	} else if tunnelInstruction.NetworkVersion == "IPv6"{
-		binary.Write(networkVersionBuf, binary.BigEndian, uint16(1))
-		ip.To16()
-	}
-	message = append(message, networkVersionBuf.Bytes()...)
-
 	// Convert tunnelID to Byte Array
 	tunnelIDBuf := new(bytes.Buffer)
 	binary.Write(tunnelIDBuf, binary.BigEndian, tunnelInstruction.TunnelID)
 	message = append(message, tunnelIDBuf.Bytes()...)
-
-	// Convert port to Byte Array
-	portBuf := new(bytes.Buffer)
-	binary.Write(portBuf, binary.BigEndian, tunnelInstruction.Port)
-	message = append(message, portBuf.Bytes()...)
-
-	// Convert destinationAddress to Byte Array
-	log.Printf("IP: %x\n", []byte(ip))
-	message = append(message, ip...)
 
 	// ToDo: Encrypt Data.
 	message = append(message, tunnelInstruction.Data...)
