@@ -36,18 +36,18 @@ func CreateNewPeer(config *models.Config) (*Peer, error) {
 	newTCPListener, err := createTCPListener(config.P2P_Port)
 	if err != nil {
 		log.Println("CreatePeer: Problem creating TCP listener, error: ", err)
-		return &Peer{&models.Peer{nil , nil, 0, "", nil, nil, nil, nil}}, err
+		return &Peer{&models.Peer{nil , nil, 0, 0, "", nil, nil, nil, nil}}, err
 	}
 
 	// Create new UDPConn to listen for udp messages
-	newUDPListener, err := createUDPListener()
+	newUDPListener, UDPPort, err := createUDPListener()
 	if err != nil {
 		log.Println("CreatePeer: Problem creating UDP listener, error: ", err)
-		return &Peer{&models.Peer{nil , nil, 0, "", nil, nil, nil, nil}}, err
+		return &Peer{&models.Peer{nil , nil, 0, 0, "", nil, nil, nil, nil}}, err
 	}
 
 	// Create new peer
-	newPeer := &Peer{&models.Peer{newTCPListener, newUDPListener,  config.P2P_Port, config.P2P_Hostname, config.PrivateKey, config.PublicKey, make(map[uint32] *models.UDPConnection), make(map[uint32] *models.TCPConnection)}}
+	newPeer := &Peer{&models.Peer{newTCPListener, newUDPListener,  UDPPort,config.P2P_Port, config.P2P_Hostname, config.PrivateKey, config.PublicKey, make(map[uint32] *models.UDPConnection), make(map[uint32] *models.TCPConnection)}}
 
 	return newPeer, nil
 }
@@ -98,27 +98,27 @@ func (peer *Peer) StartTCPListening() {
 }
 
 // createUDPListener creates a new UDP Listener
-func createUDPListener() (*net.UDPConn, error) {
+func createUDPListener() (*net.UDPConn, int, error) {
 	log.Println("createUDPListener: Create a new listener for UDP")
 
 	// First, create new port
 	port, err := getFreePort()
 	log.Println("createUDPListener: my port: " + strconv.Itoa(port))
 	if err != nil {
-		return nil, errors.New("createUDPConn: Couldn't create new port, " + err.Error())
+		return nil, 0, errors.New("createUDPConn: Couldn't create new port, " + err.Error())
 	}
 
 	udpAddr, err := net.ResolveUDPAddr("udp4", ":" + strconv.Itoa(port))
 	if err != nil {
-		return nil, errors.New("createUDPListener: Problem resolving UDP Address: " + err.Error())
+		return nil, 0, errors.New("createUDPListener: Problem resolving UDP Address: " + err.Error())
 	}
 
 	listener, err := net.ListenUDP("udp", udpAddr)
 	if err != nil {
-		return nil, errors.New("createTcpListener: Problem creating net.TCPListener: " + err.Error())
+		return nil, 0, errors.New("createTcpListener: Problem creating net.TCPListener: " + err.Error())
 	}
 
-	return listener, nil
+	return listener, port, nil
 }
 
 // StartUDPListening lets the peer listen for new UDP-messages

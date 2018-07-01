@@ -52,15 +52,47 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 
 		// TUNNEL INSTRUCTION
 		case 569:
-			 // TODO: Switch case to distinguish between codes >> Write it into new forwardTCP Channel and let a handler write
-			// 1. Create new righter and append to peer
-			// 2. Send message
-			// TODO function for switch
+			log.Println("Ja, hier war ich!")
+			 // First, check if there is a right peer set for this tunnel id, if not decrypt data and exeute, if yes, simply forward it
+			 tunnelID := binary.BigEndian.Uint32(messageChannel.Message[4:8])
+			 // simply forward
+			 if myPeer.PeerObject.TCPConnections[tunnelID].RightWriter != nil {
+			 	log.Println("Right Writer exists, simply forward data ")
+				 myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write(messageChannel.Message)
+			 } else {
+			 	// no right writer exists, handle data now to send the command
+			 	// first, determine the command out of data and execute the function
+			 	/*data := messageChannel.Message[4:]
+			 	command := binary.BigEndian.Uint16(data[0:2])
 
+				 switch command {
+				 case 567:*/
+					// constructMessage := models.ConstructTunnel{NetworkVersion: "IPv4", DestinationHostkey: []byte("KEY"), DestinationAddress: "192.168.0.15", Port: 61637}
+					 //message := services.CreateConstructTunnelMessage(constructMessage)
+					 // now, create new TCP RightWriter for the right side
+					 ipAdd := "192.168.0.10"
+					 //newTCPWriter, err := myPeer.CreateTCPWriter(ipAdd)
+					 conn, err := net.Dial("tcp", ipAdd + ":4200")
+					 if err != nil {
+					 	return errors.New("createTCPWriter: Error while dialing to destination, error: " + err.Error())
+				 	}
+
+				 	newTCPWriter := &models.TCPWriter{ipAdd, 4200, conn}
+
+					 if err != nil {
+						 return errors.New("Error creating tcp writer, error: " + err.Error())
+					 }
+					 myPeer.PeerObject.TCPConnections[tunnelID].RightWriter = newTCPWriter
+					 myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write([]byte("Hey bitches !!:D "))
+					 //myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write(message)
+				 	/*break
+
+				 default:
+					 return errors.New("tcpMessagesController: Message Type not Found")
+				 }*/
+			 }
 
 			break
-
-		// ToDo: Handle Error Messages while construction is ongoing.
 
 		default:
 			return errors.New("tcpMessagesController: Message Type not Found")
@@ -163,18 +195,22 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel) 
 
 func handleTunnelInstruction(messageChannel services.TCPMessageChannel, myPeer *services.Peer) {
 	var networkVersionString string
-	var destinationAddress string // without port ?!
-	// TODO: Add port where destination peer is listening
+	var destinationAddress string
+	var data []byte
 
-	networkVersion := binary.BigEndian.Uint16(messageChannel.Message[4:6])
-	onionPort := binary.BigEndian.Uint16(messageChannel.Message[6:8])
+	command := binary.BigEndian.Uint16(messageChannel.Message[4:6])
+	networkVersion := binary.BigEndian.Uint16(messageChannel.Message[6:8])
+	tunnelID := binary.BigEndian.Uint32(messageChannel.Message[8:12])
+	onionPort := binary.BigEndian.Uint16(messageChannel.Message[12:14])
 
 	if networkVersion == 0 {
 		networkVersionString = "IPv4"
-		destinationAddress = net.IP(messageChannel.Message[8:12]).String()
+		destinationAddress = net.IP(messageChannel.Message[14:18]).String()
+		data = messageChannel.Message[18:]
 	} else if networkVersion == 1 {
 		networkVersionString = "IPv6"
-		destinationAddress = net.IP(messageChannel.Message[8:24]).String()
+		destinationAddress = net.IP(messageChannel.Message[14:30]).String()
+		data = messageChannel.Message[30:]
 	}
 
 	// ToDo: Functionality: Create tcp right writer and left righter for origin and final receiver
@@ -182,8 +218,10 @@ func handleTunnelInstruction(messageChannel services.TCPMessageChannel, myPeer *
 	// Create TCPWriter for next destiantion now channel
 	//myPeer.CreateTCPWriter(destinationAddress, int(onionPort))
 
-	log.Printf("Network Version: %s\n", networkVersionString)
+	log.Printf("Command: %d\n", command)
+	log.Printf("Tunnel ID: %d\n", tunnelID)
 	log.Printf("Onion Port: %d\n", onionPort)
+	log.Printf("Network Version: %s\n", networkVersionString)
 	log.Printf("Destination Address: %s\n", destinationAddress)
+	log.Printf("Data: %x\n", data)
 }
-

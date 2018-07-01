@@ -10,6 +10,7 @@ import (
 type Peer struct {
 	TCPListener		*net.TCPListener				`json:"tcp_listener"`
 	UDPListener		*net.UDPConn 					`json:"udp_listener"`
+	UDPPort			int 							`json:"udp_port"`
 	P2P_Port		int								`json:"p2p_port"`			// This is the Port for the TCP port
 	P2P_Hostname	string							`json:"p2p_hostname"`		// This is the ip address of the peer
 	PrivateKey		*rsa.PrivateKey					`json:"private_key"`
