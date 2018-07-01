@@ -52,7 +52,7 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 		// TUNNEL INSTRUCTION
 		case 569:
 			log.Println("Ja, hier war ich!")
-
+			endOfMessage := len(messageChannel.Message) -3
 			tunnelID := binary.BigEndian.Uint32(messageChannel.Message[8:12])
 
 			 // First, check if there is a right peer set for this tunnel id, if not decrypt data and exeute, if yes, simply forward it
@@ -63,7 +63,7 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 			 } else {
 			 	// no right writer exists, handle data now to send the command
 			 	// first, determine the command out of data and execute the function
-			 	data := messageChannel.Message[4:]
+			 	data := messageChannel.Message[4:endOfMessage]
 
 			 	log.Println(string(data))
 
@@ -151,6 +151,8 @@ func handleOnionTunnelDestroy(messageChannel services.TCPMessageChannel) {
 }
 
 func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *services.Peer) (*models.UDPConnection, error) {
+	endOfMessage := len(messageChannel.Message) -3
+
 	var networkVersionString string
 	var destinationAddress string
 	var destinationHostkey []byte
@@ -162,11 +164,11 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *se
 	if networkVersion == 0 {
 		networkVersionString = "IPv4"
 		destinationAddress = net.IP(messageChannel.Message[12:16]).String()
-		destinationHostkey = messageChannel.Message[16:]
+		destinationHostkey = messageChannel.Message[16:endOfMessage]
 	} else if networkVersion == 1 {
 		networkVersionString = "IPv6"
 		destinationAddress = net.IP(messageChannel.Message[12:28]).String()
-		destinationHostkey = messageChannel.Message[28:]
+		destinationHostkey = messageChannel.Message[28:endOfMessage]
 	}
 
 	log.Printf("Network Version: %s\n", networkVersionString)
@@ -204,9 +206,11 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *se
 
 func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, myPeer *services.Peer) {
 	log.Println("CONFIRM RECEIVED")
+	endOfMessage := len(messageChannel.Message) -3
+
 	onionPort := binary.BigEndian.Uint16(messageChannel.Message[4:6])
 	tunnelID := binary.BigEndian.Uint32(messageChannel.Message[6:10])
-	destinationHostkey := messageChannel.Message[10:]
+	destinationHostkey := messageChannel.Message[10:endOfMessage]
 
 	// Now, just for tests, send a forward to a new peer
 	tunnelInstructionMessage := models.TunnelInstruction{TunnelID: tunnelID, Data: []byte("Some Data")}
