@@ -44,8 +44,8 @@ func CreateConstructTunnelMessage(constructTunnel models.ConstructTunnel) ([]byt
 
 	// Convert tunnelID to Byte Array
 	tunnelIDBuf := new(bytes.Buffer)
-	newID := CreateTunnelID()
-	binary.Write(tunnelIDBuf, binary.BigEndian, newID)
+	//newID := CreateTunnelID()
+	binary.Write(tunnelIDBuf, binary.BigEndian, constructTunnel.TunnelID)
 	message = append(message, tunnelIDBuf.Bytes()...)
 
 	// Convert destinationAddress to Byte Array
@@ -54,6 +54,9 @@ func CreateConstructTunnelMessage(constructTunnel models.ConstructTunnel) ([]byt
 
 	// Append destinationHostkey to Message Array
 	message = append(message, constructTunnel.DestinationHostkey...)
+
+	// Append Delimiter
+	message = append(message, []byte("\n")...)
 
 	// Prepend size of message
 	sizeBuf := new(bytes.Buffer)
@@ -85,6 +88,9 @@ func CreateConfirmTunnelCronstructionMessage(confirmTunnelConstruction models.Co
 	// Append destinationHostkey to Message Array
 	message = append(message, confirmTunnelConstruction.DestinationHostkey...)
 
+	// Append Delimiter
+	message = append(message, []byte("\n")...)
+
 	// Prepend size of message
 	sizeBuf := new(bytes.Buffer)
 	binary.Write(sizeBuf, binary.BigEndian, uint16(len(message)+2))
@@ -102,13 +108,16 @@ func CreateTunnelInstruction(tunnelInstruction models.TunnelInstruction) ([]byte
 	binary.Write(messageTypeBuf, binary.BigEndian, messageType)
 	message := messageTypeBuf.Bytes()
 
-	// Convert tunnelID to Byte Array
+	// Convert tunnelID to Byte Arrays
 	tunnelIDBuf := new(bytes.Buffer)
 	binary.Write(tunnelIDBuf, binary.BigEndian, tunnelInstruction.TunnelID)
 	message = append(message, tunnelIDBuf.Bytes()...)
 
 	// ToDo: Encrypt Data.
 	message = append(message, tunnelInstruction.Data...)
+
+	// Append Delimiter
+	message = append(message, []byte("\n")...)
 
 	// Prepend size of message
 	sizeBuf := new(bytes.Buffer)
