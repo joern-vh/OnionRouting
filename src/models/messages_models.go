@@ -51,7 +51,6 @@ type ConfirmTunnelConstruction struct {
 }
 
 type TunnelInstruction struct {
-	Command					uint16
 	TunnelID 				uint32
 	Data					[]byte
 }

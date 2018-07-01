@@ -97,11 +97,6 @@ func CreateTunnelInstruction(tunnelInstruction models.TunnelInstruction) ([]byte
 	binary.Write(messageTypeBuf, binary.BigEndian, messageType)
 	message := messageTypeBuf.Bytes()
 
-	// Convert command to Byte array
-	commandBuf := new(bytes.Buffer)
-	binary.Write(commandBuf, binary.BigEndian, tunnelInstruction.Command)
-	message = append(message, commandBuf.Bytes()...)
-
 	// Convert tunnelID to Byte Array
 	tunnelIDBuf := new(bytes.Buffer)
 	binary.Write(tunnelIDBuf, binary.BigEndian, tunnelInstruction.TunnelID)

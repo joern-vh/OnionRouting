@@ -36,9 +36,9 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 
 		// CONSTRUCT TUNNEL
 		case 567:
-			newUDPConnection, err := handleConstructTunnel(messageChannel)
+			newUDPConnection, err := handleConstructTunnel(messageChannel, myPeer)
 			if err != nil {
-				return errors.New("handleTCPMessage: " + err.Error())
+				return err
 			}
 
 			myPeer.AppendNewUDPConnection(newUDPConnection)
@@ -52,10 +52,49 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 
 		// TUNNEL INSTRUCTION
 		case 569:
-			handleTunnelInstruction(messageChannel)
-			break
+			log.Println("Ja, hier war ich!")
 
-		// ToDo: Handle Error Messages while construction is ongoing.
+			tunnelID := binary.BigEndian.Uint32(messageChannel.Message[8:12])
+
+			 // First, check if there is a right peer set for this tunnel id, if not decrypt data and exeute, if yes, simply forward it
+			 // simply forward
+			 if myPeer.PeerObject.TCPConnections[tunnelID].RightWriter != nil {
+			 	log.Println("Right Writer exists, simply forward data ")
+				 myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write(messageChannel.Message)
+			 } else {
+			 	// no right writer exists, handle data now to send the command
+			 	// first, determine the command out of data and execute the function
+			 	/*data := messageChannel.Message[4:]
+			 	command := binary.BigEndian.Uint16(data[0:2])
+
+				 switch command {
+				 case 567:*/
+					// constructMessage := models.ConstructTunnel{NetworkVersion: "IPv4", DestinationHostkey: []byte("KEY"), DestinationAddress: "192.168.0.15", Port: 61637}
+					 //message := services.CreateConstructTunnelMessage(constructMessage)
+					 // now, create new TCP RightWriter for the right side
+					 ipAdd := "192.168.0.10"
+					 //newTCPWriter, err := myPeer.CreateTCPWriter(ipAdd)
+					 conn, err := net.Dial("tcp", ipAdd + ":4200")
+					 if err != nil {
+					 	return errors.New("createTCPWriter: Error while dialing to destination, error: " + err.Error())
+				 	}
+
+				 	newTCPWriter := &models.TCPWriter{ipAdd, 4200, conn}
+
+					 if err != nil {
+						 return errors.New("Error creating tcp writer, error: " + err.Error())
+					 }
+					 myPeer.PeerObject.TCPConnections[tunnelID].RightWriter = newTCPWriter
+					 myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write([]byte("Hey bitches !!:D "))
+					 //myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write(message)
+				 	/*break
+
+				 default:
+					 return errors.New("tcpMessagesController: Message Type not Found")
+				 }*/
+			 }
+
+			break
 
 		default:
 			return errors.New("tcpMessagesController: Message Type not Found")
@@ -87,6 +126,7 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *s
 	constructTunnelMessage := models.ConstructTunnel{NetworkVersion: networkVersionString, DestinationHostkey: destinationHostkey, DestinationAddress: destinationAddress, Port: myPeer.PeerObject.UDPPort}
 	message := services.CreateConstructTunnelMessage(constructTunnelMessage)
 
+	log.Println(message)
 
 
 	log.Printf("Network Version: %s\n", networkVersionString)
@@ -101,7 +141,7 @@ func handleOnionTunnelDestroy(messageChannel services.TCPMessageChannel) {
 	log.Printf("Tunnel ID: %s\n", tunnelID)
 }
 
-func handleConstructTunnel(messageChannel services.TCPMessageChannel) (*models.UDPConnection, error) {
+func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *services.Peer) (*models.UDPConnection, error) {
 	var networkVersionString string
 	var destinationAddress string
 	var destinationHostkey []byte
@@ -128,12 +168,24 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel) (*models.U
 
 	// First, get ip address of sender
 	ipAdd := services.GetIPOutOfAddr(messageChannel.Host)
+
+	// Then, create the TCPWriter left
+	newTCPWriter, err := myPeer.CreateTCPWriter(ipAdd)
+	if err != nil {
+		return nil, errors.New("Error creating tcp writer, error: " + err.Error())
+	}
+
+	// Append the new TCPWriter as LeftTCPWriter to the TCP Connection
+	myPeer.CreateInitialTCPConnection(tunnelID, newTCPWriter)
+
 	//  Now, create new UDP Connection with this "sender" as left side
 	newUDPConnection, err := services.CreateInitialUDPConnection(ipAdd, int(onionPort), tunnelID, networkVersionString)
 	if err != nil {
 		return nil, errors.New("handleConstructTunnel: " + err.Error())
 	}
-	
+
+	// If everything worked out, send confirmTunnelConstuction back
+	myPeer.PeerObject.TCPConnections[tunnelID].LeftWriter.TCPWriter.Write([]byte("Fuck yeah, I've build a UDP connection to you"))
 	return newUDPConnection, nil
 }
 
@@ -145,18 +197,4 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel) 
 	log.Printf("Onion Port: %s\n", onionPort)
 	log.Printf("Tunnel ID: %s\n", tunnelID)
 	log.Printf("Destination Hostkey: %s\n", destinationHostkey)
-}
-
-func handleTunnelInstruction(messageChannel services.TCPMessageChannel) {
-	var data []byte
-
-	command := binary.BigEndian.Uint16(messageChannel.Message[4:6])
-	tunnelID := binary.BigEndian.Uint32(messageChannel.Message[8:12])
-	data = messageChannel.Message[12:]
-
-	// ToDo: Functionality.
-
-	log.Printf("Command: %d\n", command)
-	log.Printf("Tunnel ID: %d\n", tunnelID)
-	log.Printf("Data: %x\n", data)
 }
