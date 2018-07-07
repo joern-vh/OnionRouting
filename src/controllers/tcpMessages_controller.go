@@ -178,7 +178,7 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *se
 
 	networkVersion := binary.BigEndian.Uint16(messageChannel.Message[4:6])
 	onionPort := binary.BigEndian.Uint16(messageChannel.Message[6:8])
-	//tcpPort := binary.BigEndian.Uint16(messageChannel.Message[8:10])
+	tcpPort := binary.BigEndian.Uint16(messageChannel.Message[8:10])
 	tunnelID := binary.BigEndian.Uint32(messageChannel.Message[10:14])
 
 	if networkVersion == 0 {
@@ -191,12 +191,11 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *se
 		//destinationHostkey = messageChannel.Message[30:]
 	}
 
-
 	// First, get ip address of sender
 	ipAdd := services.GetIPOutOfAddr(messageChannel.Host)
 
 	// Then, create the TCPWriter left
-	newTCPWriter, err := myPeer.CreateTCPWriter(ipAdd, 3000)
+	newTCPWriter, err := myPeer.CreateTCPWriter(ipAdd, int(tcpPort))
 	if err != nil {
 		return nil, errors.New("Error creating tcp writer, error: " + err.Error())
 	}
