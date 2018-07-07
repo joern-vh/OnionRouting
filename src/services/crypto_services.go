@@ -81,6 +81,13 @@ func DecryptKeyExchange(privateKey *rsa.PrivateKey, key []byte) ([]byte, error) 
 	return decryptedData, nil
 }
 
+// Generates an identity byte array based on SHA256 Hash
+func GenerateIdentityOfKey(pubKey *rsa.PublicKey) ([]byte) {
+	hash := sha256.Sum256(x509.MarshalPKCS1PublicKey(pubKey))
+
+	return hash[:]
+}
+
 // Encrypt Data with DH key.
 func EncryptData(key []byte, data []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
