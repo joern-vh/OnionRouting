@@ -38,7 +38,8 @@ type OnionCover struct {
 
 type ConstructTunnel struct {
 	NetworkVersion			string
-	Port					uint16
+	OnionPort				uint16
+	TCPPort					uint16
 	TunnelID				uint32
 	DestinationAddress 		string
 	DestinationHostkey 		[]byte
@@ -52,6 +53,11 @@ type ConfirmTunnelConstruction struct {
 
 type TunnelInstruction struct {
 	TunnelID 				uint32
+	Data					[]byte
+}
+
+type ConfirmTunnelInstruction struct {
+	TunnelID				uint32
 	Data					[]byte
 }
 
