@@ -131,7 +131,7 @@ func CreateTunnelInstruction(tunnelInstruction models.TunnelInstruction) ([]byte
 	return message
 }
 
-func CreateConfirmTunnelInstruction(tunnelInstruction models.TunnelInstruction) ([]byte) {
+func CreateConfirmTunnelInstruction(confirmTunnelInstruction models.ConfirmTunnelInstruction) ([]byte) {
 	// Message Type
 	messageType := uint16(570)
 
@@ -142,11 +142,11 @@ func CreateConfirmTunnelInstruction(tunnelInstruction models.TunnelInstruction) 
 
 	// Convert tunnelID to Byte Arrays
 	tunnelIDBuf := new(bytes.Buffer)
-	binary.Write(tunnelIDBuf, binary.BigEndian, tunnelInstruction.TunnelID)
+	binary.Write(tunnelIDBuf, binary.BigEndian, confirmTunnelInstruction.TunnelID)
 	message = append(message, tunnelIDBuf.Bytes()...)
 
 	// ToDo: Encrypt Data.
-	message = append(message, tunnelInstruction.Data...)
+	message = append(message, confirmTunnelInstruction.Data...)
 
 	// Append Delimiter
 	message = append(message, []byte("\r\n")...)
