@@ -95,8 +95,6 @@ func EncryptData(key []byte, data []byte) ([]byte, error) {
 		return nil, errors.New("Crypto: New Error occurred while encrypting: " + err.Error())
 	}
 
-	// The IV needs to be unique, but not secure. Therefore it's common to
-	// include it at the beginning of the ciphertext.
 	ciphertext := make([]byte, aes.BlockSize+len(data))
 	iv := ciphertext[:aes.BlockSize]
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
@@ -118,10 +116,8 @@ func DecryptData(key []byte, data []byte) ([]byte, error) {
 		return nil, errors.New("Crypto: New Error occurred while decrypting: " + err.Error())
 	}
 
-	// The IV needs to be unique, but not secure. Therefore it's common to
-	// include it at the beginning of the ciphertext.
 	if len(data) < aes.BlockSize {
-		panic("ciphertext too short")
+		return nil, errors.New("Crypto: ciphertext too short")
 	}
 	iv := ciphertext[:aes.BlockSize]
 	ciphertext = ciphertext[aes.BlockSize:]
