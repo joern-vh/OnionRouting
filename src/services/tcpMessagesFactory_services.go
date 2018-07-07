@@ -46,6 +46,8 @@ func CreateOnionTunnelBuild(onionTunnelBuild models.OnionTunnelBuild) ([]byte)  
 	// Convert destinationHostkey to Byte Array
 	message = append(message, onionTunnelBuild.DestinationHostkey...)
 
+	// Append Delimiter
+	message = append(message, []byte("\r\n")...)
 
 	// Prepend size of message
 	sizeBuf := new(bytes.Buffer)
@@ -72,6 +74,9 @@ func CreateOnionTunnelReady(onionTunnelReady models.OnionTunnelReady) ([]byte) {
 	// Convert destinationHostkey to Byte Array
 	message = append(message, onionTunnelReady.DestinationHostkey...)
 
+	// Append Delimiter
+	message = append(message, []byte("\r\n")...)
+
 	// Prepend size of message
 	sizeBuf := new(bytes.Buffer)
 	binary.Write(sizeBuf, binary.BigEndian, uint16(len(message)+2))
@@ -95,6 +100,9 @@ func CreateOnionTunnelIncoming(onionTunnelIncoming models.OnionTunnelIncoming) (
 	binary.Write(tunnelIDBuf, binary.BigEndian, onionTunnelIncoming.TunnelID)
 	message = append(message, tunnelIDBuf.Bytes()...)
 
+	// Append Delimiter
+	message = append(message, []byte("\r\n")...)
+
 	// Prepend size of message
 	sizeBuf := new(bytes.Buffer)
 	binary.Write(sizeBuf, binary.BigEndian, uint16(len(message)+2))
@@ -116,6 +124,9 @@ func CreateOnionTunnelDestroy(onionTunnelDestroy models.OnionTunnelDestroy) ([]b
 	tunnelIDBuf := new(bytes.Buffer)
 	binary.Write(tunnelIDBuf, binary.BigEndian, onionTunnelDestroy.TunnelID)
 	message = append(message, tunnelIDBuf.Bytes()...)
+
+	// Append Delimiter
+	message = append(message, []byte("\r\n")...)
 
 	// Prepend size of message
 	sizeBuf := new(bytes.Buffer)
@@ -149,6 +160,8 @@ func CreateOnionTunnelError(onionError models.OnionError) ([]byte) {
 	binary.Write(tunnelIDBuf, binary.BigEndian, onionError.TunnelID)
 	message = append(message, tunnelIDBuf.Bytes()...)
 
+	// Append Delimiter
+	message = append(message, []byte("\r\n")...)
 
 	// Prepend size of message
 	sizeBuf := new(bytes.Buffer)

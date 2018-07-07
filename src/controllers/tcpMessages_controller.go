@@ -8,6 +8,8 @@ import (
 	"services"
 
 	"models"
+	"fmt"
+	"bytes"
 )
 
 func StartTCPController(myPeer *services.Peer) {
@@ -55,7 +57,6 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 		// TUNNEL INSTRUCTION
 		case 569:
 			log.Println("Forwarding!!!")
-
 			tunnelID := binary.BigEndian.Uint32(messageChannel.Message[4:8])
 			log.Println("Tunnel id", tunnelID)
 			log.Println(myPeer.PeerObject.TCPConnections[tunnelID])
@@ -69,6 +70,7 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 			 	// first, determine the command out of data and execute the function
 			 	data := messageChannel.Message[8:]
 			 	log.Println(data)
+
 
 			 	command := binary.BigEndian.Uint16(data[0:2])
 			 	log.Println("I got this command: ", command)
@@ -85,7 +87,7 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 					 }
 					 myPeer.PeerObject.TCPConnections[tunnelID].RightWriter = newTCPWriter
 
-					 constructMessage := models.ConstructTunnel{NetworkVersion: "IPv4", DestinationHostkey: []byte("KEY"), DestinationAddress: ipAdd, Port: uint16(myPeer.PeerObject.UDPPort)}
+					 constructMessage := models.ConstructTunnel{NetworkVersion: "IPv4", DestinationHostkey: []byte("KEY"), DestinationAddress: ipAdd, OnionPort: uint16(myPeer.PeerObject.UDPPort), TCPPort:uint16(myPeer.PeerObject.P2P_Port)}
 					 message := services.CreateConstructTunnelMessage(constructMessage)
 
 					 myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write(message)
@@ -96,6 +98,23 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 					 return errors.New("tcpMessagesController: Message Type not Found")
 				 }
 			 }
+
+			break
+
+		// CONFIRM TUNNEL INSTRUCTION
+		case 570:
+			tunnelID := binary.BigEndian.Uint32(messageChannel.Message[4:12])
+			data := messageChannel.Message[4:]
+
+			log.Println("TunnelID: ", tunnelID)
+			log.Println("Data: ", data)
+			break
+
+		// EXCHANGE KEY
+		case 571:
+			pubKey := messageChannel.Message[4:]
+
+			log.Println("PubKey: ", pubKey)
 
 			break
 
@@ -114,6 +133,8 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *s
 	networkVersion := binary.BigEndian.Uint16(messageChannel.Message[4:6])
 	onionPort := binary.BigEndian.Uint16(messageChannel.Message[6:8])
 
+	fmt.Println("SIZE OF ONION TUNNEL BUILD: ", len(messageChannel.Message))
+
 	if networkVersion == 0 {
 		networkVersionString = "IPv4"
 		destinationAddress = net.IP(messageChannel.Message[8:12]).String()
@@ -124,10 +145,12 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *s
 		destinationHostkey = messageChannel.Message[24:]
 	}
 
+	log.Println(destinationHostkey)
+
 	//Construct Tunnel Message
 	newTunnelID := services.CreateTunnelID()
 	log.Println("NewTunnelID: ", newTunnelID)
-	constructTunnelMessage := models.ConstructTunnel{NetworkVersion: networkVersionString, DestinationHostkey: destinationHostkey, TunnelID: newTunnelID, DestinationAddress: destinationAddress, Port: uint16(myPeer.PeerObject.UDPPort)}
+	constructTunnelMessage := models.ConstructTunnel{NetworkVersion: networkVersionString, DestinationHostkey: []byte("KEY"), TunnelID: newTunnelID, DestinationAddress: destinationAddress, OnionPort: uint16(myPeer.PeerObject.UDPPort), TCPPort: uint16(myPeer.PeerObject.P2P_Port)}
 	message := services.CreateConstructTunnelMessage(constructTunnelMessage)
 
 	newTCPWriter, err := myPeer.CreateTCPWriter(destinationAddress, 3000)
@@ -136,7 +159,9 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *s
 	}
 
 	myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID] = &models.TCPConnection{constructTunnelMessage.TunnelID, nil, newTCPWriter}
-	myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID].RightWriter.TCPWriter.Write(message)
+	n, _ := myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID].RightWriter.TCPWriter.Write(message)
+
+	log.Println("Size: ", n)
 
 	log.Printf("Network Version: %s\n", networkVersionString)
 	log.Printf("Onion Port: %d\n", onionPort)
@@ -160,21 +185,22 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *se
 
 	networkVersion := binary.BigEndian.Uint16(messageChannel.Message[4:6])
 	onionPort := binary.BigEndian.Uint16(messageChannel.Message[6:8])
-	tunnelID := binary.BigEndian.Uint32(messageChannel.Message[8:12])
+	tcpPort := binary.BigEndian.Uint16(messageChannel.Message[8:10])
+	tunnelID := binary.BigEndian.Uint32(messageChannel.Message[10:14])
 
 	if networkVersion == 0 {
 		networkVersionString = "IPv4"
-		destinationAddress = net.IP(messageChannel.Message[12:16]).String()
-		destinationHostkey = messageChannel.Message[16:endOfMessage]
-		log.Printf("Destination Hostkey: %s\n", destinationHostkey)
+		destinationAddress = net.IP(messageChannel.Message[14:18]).String()
+		destinationHostkey = messageChannel.Message[18:endOfMessage]
 	} else if networkVersion == 1 {
 		networkVersionString = "IPv6"
-		destinationAddress = net.IP(messageChannel.Message[12:28]).String()
-		destinationHostkey = messageChannel.Message[28:endOfMessage]
+		destinationAddress = net.IP(messageChannel.Message[14:30]).String()
+		destinationHostkey = messageChannel.Message[30:endOfMessage]
 	}
 
 	log.Printf("Network Version: %s\n", networkVersionString)
 	log.Printf("Onion Port: %d\n", onionPort)
+	log.Printf("TCP Port: %d\n", tcpPort)
 	log.Printf("Tunnel ID: %d\n", tunnelID)
 	log.Printf("Destination Address: %s\n", destinationAddress)
 	log.Printf("Destination Hostkey: %s\n", destinationHostkey)
@@ -208,18 +234,36 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *se
 
 func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, myPeer *services.Peer) {
 	log.Println("CONFIRM RECEIVED")
-	endOfMessage := len(messageChannel.Message) -3
+
+	endOfMessage := len(messageChannel.Message) - 3
 
 	onionPort := binary.BigEndian.Uint16(messageChannel.Message[4:6])
 	tunnelID := binary.BigEndian.Uint32(messageChannel.Message[6:10])
 	destinationHostkey := messageChannel.Message[10:endOfMessage]
 
+	// Convert messageType to Byte array
+	messageTypeBuf := new(bytes.Buffer)
+	binary.Write(messageTypeBuf, binary.BigEndian, uint16(567))
+	data := messageTypeBuf.Bytes()
+
+
+	ipAddr := net.ParseIP("192.168.0.15")
+	data = append(data, ipAddr.To4()...)
+
+	portBuf := new(bytes.Buffer)
+	binary.Write(portBuf, binary.BigEndian, uint16(4200))
+	data = append(data, portBuf.Bytes()...)
+
+	log.Println("DATA: ", data)
+
 	// Now, just for tests, send a forward to a new peer
-	tunnelInstructionMessage := models.TunnelInstruction{TunnelID: tunnelID, Data: []byte("Some Data")}
+	tunnelInstructionMessage := models.TunnelInstruction{TunnelID: tunnelID, Data: data}
 	message := services.CreateTunnelInstruction(tunnelInstructionMessage)
 
-	log.Println(myPeer.PeerObject.TCPConnections[tunnelID].RightWriter)
-	myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write(message)
+	n,_ := myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write(message)
+
+	log.Println(message)
+	log.Println("Size: ", n)
 
 	log.Printf("Onion Port: %d\n", onionPort)
 	log.Printf("Tunnel ID: %d\n", tunnelID)

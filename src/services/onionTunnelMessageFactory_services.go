@@ -37,10 +37,15 @@ func CreateConstructTunnelMessage(constructTunnel models.ConstructTunnel) ([]byt
 	}
 	message = append(message, networkVersionBuf.Bytes()...)
 
-	// Convert port to Byte Array
+	// Convert onion port to Byte Array
 	portBuf := new(bytes.Buffer)
-	binary.Write(portBuf, binary.BigEndian, constructTunnel.Port)
+	binary.Write(portBuf, binary.BigEndian, constructTunnel.OnionPort)
 	message = append(message, portBuf.Bytes()...)
+
+	// Convert tcp port to Byte Array
+	tcpPortBuf := new(bytes.Buffer)
+	binary.Write(tcpPortBuf, binary.BigEndian, constructTunnel.TCPPort)
+	message = append(message, tcpPortBuf.Bytes()...)
 
 	// Convert tunnelID to Byte Array
 	tunnelIDBuf := new(bytes.Buffer)
@@ -55,8 +60,10 @@ func CreateConstructTunnelMessage(constructTunnel models.ConstructTunnel) ([]byt
 	// Append destinationHostkey to Message Array
 	message = append(message, constructTunnel.DestinationHostkey...)
 
+	log.Println("KEY SIZE: ", len(constructTunnel.DestinationHostkey))
+
 	// Append Delimiter
-	message = append(message, []byte("\n")...)
+	message = append(message, []byte("\r\n")...)
 
 	// Prepend size of message
 	sizeBuf := new(bytes.Buffer)
@@ -89,7 +96,7 @@ func CreateConfirmTunnelCronstructionMessage(confirmTunnelConstruction models.Co
 	message = append(message, confirmTunnelConstruction.DestinationHostkey...)
 
 	// Append Delimiter
-	message = append(message, []byte("\n")...)
+	message = append(message, []byte("\r\n")...)
 
 	// Prepend size of message
 	sizeBuf := new(bytes.Buffer)
@@ -117,7 +124,58 @@ func CreateTunnelInstruction(tunnelInstruction models.TunnelInstruction) ([]byte
 	message = append(message, tunnelInstruction.Data...)
 
 	// Append Delimiter
-	message = append(message, []byte("\n")...)
+	message = append(message, []byte("\r\n")...)
+
+	// Prepend size of message
+	sizeBuf := new(bytes.Buffer)
+	binary.Write(sizeBuf, binary.BigEndian, uint16(len(message)+2))
+	message = append(sizeBuf.Bytes(), message...)
+
+	return message
+}
+
+func CreateConfirmTunnelInstruction(tunnelInstruction models.TunnelInstruction) ([]byte) {
+	// Message Type
+	messageType := uint16(570)
+
+	// Convert messageType to Byte array
+	messageTypeBuf := new(bytes.Buffer)
+	binary.Write(messageTypeBuf, binary.BigEndian, messageType)
+	message := messageTypeBuf.Bytes()
+
+	// Convert tunnelID to Byte Arrays
+	tunnelIDBuf := new(bytes.Buffer)
+	binary.Write(tunnelIDBuf, binary.BigEndian, tunnelInstruction.TunnelID)
+	message = append(message, tunnelIDBuf.Bytes()...)
+
+	// ToDo: Encrypt Data.
+	message = append(message, tunnelInstruction.Data...)
+
+	// Append Delimiter
+	message = append(message, []byte("\r\n")...)
+
+	// Prepend size of message
+	sizeBuf := new(bytes.Buffer)
+	binary.Write(sizeBuf, binary.BigEndian, uint16(len(message)+2))
+	message = append(sizeBuf.Bytes(), message...)
+
+	return message
+}
+
+func CreateExchangeKey(exchangeKey models.ExchangeKey) ([]byte) {
+	// Message Type
+	messageType := uint16(571)
+
+	// Convert messageType to Byte array
+	messageTypeBuf := new(bytes.Buffer)
+	binary.Write(messageTypeBuf, binary.BigEndian, messageType)
+	message := messageTypeBuf.Bytes()
+
+	// ToDo: Encrypt Data.
+	message = append(message, exchangeKey.PublicKey...)
+
+	// Append Delimiter
+	message = append(message, []byte("\r\n")...)
 
 	// Prepend size of message
 	sizeBuf := new(bytes.Buffer)
