@@ -221,32 +221,39 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *se
 func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, myPeer *services.Peer) {
 	log.Println("CONFIRM RECEIVED")
 
-
 	onionPort := binary.BigEndian.Uint16(messageChannel.Message[4:6])
 	tunnelID := binary.BigEndian.Uint32(messageChannel.Message[6:10])
 	//destinationHostkey := messageChannel.Message[10:]
 
-	// Convert messageType to Byte array
-	messageTypeBuf := new(bytes.Buffer)
-	binary.Write(messageTypeBuf, binary.BigEndian, uint16(567))
-	data := messageTypeBuf.Bytes()
+	if myPeer.PeerObject.TCPConnections[tunnelID].LeftWriter != nil {
+		// Forward to left a confirmTunnelInstruction
+		data := []byte("TEST")
+		confirmTunnelInstruction := models.ConfirmTunnelInstruction{TunnelID: tunnelID, Data: data}
+		message := services.CreateConfirmTunnelInstruction(confirmTunnelInstruction)
+
+		myPeer.PeerObject.TCPConnections[tunnelID].LeftWriter.TCPWriter.Write(message)
+	} else {
+		// Convert messageType to Byte array
+		messageTypeBuf := new(bytes.Buffer)
+		binary.Write(messageTypeBuf, binary.BigEndian, uint16(567))
+		data := messageTypeBuf.Bytes()
+
+		ipAddr := net.ParseIP("192.168.0.15")
+		data = append(data, ipAddr.To4()...)
+
+		portBuf := new(bytes.Buffer)
+		binary.Write(portBuf, binary.BigEndian, uint16(4200))
+		data = append(data, portBuf.Bytes()...)
 
 
-	ipAddr := net.ParseIP("192.168.0.15")
-	data = append(data, ipAddr.To4()...)
+		// Now, just for tests, send a forward to a new peer
+		tunnelInstructionMessage := models.TunnelInstruction{TunnelID: tunnelID, Data: data}
+		message := services.CreateTunnelInstruction(tunnelInstructionMessage)
 
-	portBuf := new(bytes.Buffer)
-	binary.Write(portBuf, binary.BigEndian, uint16(4200))
-	data = append(data, portBuf.Bytes()...)
-
-
-	// Now, just for tests, send a forward to a new peer
-	tunnelInstructionMessage := models.TunnelInstruction{TunnelID: tunnelID, Data: data}
-	message := services.CreateTunnelInstruction(tunnelInstructionMessage)
-
-	myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write(message)
+		myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write(message)
 
 
-	log.Printf("Onion Port: %d\n", onionPort)
-	log.Printf("Tunnel ID: %d\n", tunnelID)
+		log.Printf("Onion Port: %d\n", onionPort)
+		log.Printf("Tunnel ID: %d\n", tunnelID)
+	}
 }
