@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"strconv"
 	"models"
+	"bytes"
 )
 
 // Just used to wrap the actual Peer from models.Peer here to use it as caller
@@ -94,18 +95,47 @@ func (peer *Peer) StartTCPListening() {
 // Passes each message into the right channel
 func handleMessages (conn net.Conn) {
 	reader := bufio.NewReader(conn)
+	scanner := bufio.NewScanner(reader)
 	defer conn.Close()
 
 	for {
-		message, err := reader.ReadBytes('\n')
-		if err != nil {
-			CommunicationChannelTCPErrors <- err
-		}
+		//message, err := reader.ReadBytes('\r', '\n')
+		scanner.Split(ScanCRLF)
 
-		log.Println("New message ", message)
-		// Pass newMessage into TCPMessageChannel
-		CommunicationChannelTCPMessages <- TCPMessageChannel{message, conn.RemoteAddr().String()}
+		for scanner.Scan() {
+			/*if err != nil {
+				CommunicationChannelTCPErrors <- err
+			}*/
+
+			log.Println("New message ", scanner.Bytes())
+			// Pass newMessage into TCPMessageChannel
+			CommunicationChannelTCPMessages <- TCPMessageChannel{scanner.Bytes(), conn.RemoteAddr().String()}
+		}
 	}
+}
+
+// dropCR drops a terminal \r from the data.
+func dropCR(data []byte) []byte {
+	if len(data) > 0 && data[len(data)-1] == '\r' {
+		return data[0 : len(data)-1]
+	}
+	return data
+}
+
+func ScanCRLF(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
+	}
+	if i := bytes.Index(data, []byte{'\r', '\n'}); i >= 0 {
+		// We have a full newline-terminated line.
+		return i + 2, dropCR(data[0:i]), nil
+	}
+	// If we're at EOF, we have a final, non-terminated line. Return it.
+	if atEOF {
+		return len(data), dropCR(data), nil
+	}
+	// Request more data.
+	return 0, nil, nil
 }
 
 // createUDPListener creates a new UDP Listener
@@ -161,13 +191,13 @@ func (peer *Peer) StartUDPListening() {
 	}()
 }
 
-func (peer *Peer) CreateTCPWriter (destinationIP string) (*models.TCPWriter, error) {
-	conn, err := net.Dial("tcp", destinationIP + ":3000")
+func (peer *Peer) CreateTCPWriter (destinationIP string, tcpPort int ) (*models.TCPWriter, error) {
+	conn, err := net.Dial("tcp", destinationIP + ":" + strconv.Itoa(tcpPort))
 	if err != nil {
 		return nil, errors.New("createTCPWriter: Error while dialing to destination, error: " + err.Error())
 	}
 
-	return &models.TCPWriter{destinationIP, 3000, conn}, nil
+	return &models.TCPWriter{destinationIP, tcpPort, conn}, nil
 }
 
 // Creates a new TCPConnection for the peer with the left writer already set
