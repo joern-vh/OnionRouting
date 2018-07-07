@@ -98,7 +98,6 @@ func handleMessages (conn net.Conn) {
 	scanner := bufio.NewScanner(reader)
 	defer conn.Close()
 
-	for {
 		//message, err := reader.ReadBytes('\r', '\n')
 		scanner.Split(ScanCRLF)
 
@@ -111,7 +110,7 @@ func handleMessages (conn net.Conn) {
 			// Pass newMessage into TCPMessageChannel
 			CommunicationChannelTCPMessages <- TCPMessageChannel{scanner.Bytes(), conn.RemoteAddr().String()}
 		}
-	}
+
 }
 
 // dropCR drops a terminal \r from the data.

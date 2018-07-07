@@ -87,7 +87,7 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 					 }
 					 myPeer.PeerObject.TCPConnections[tunnelID].RightWriter = newTCPWriter
 
-					 constructMessage := models.ConstructTunnel{NetworkVersion: "IPv4", DestinationHostkey: []byte("KEY"), DestinationAddress: ipAdd, OnionPort: uint16(myPeer.PeerObject.UDPPort), TCPPort:uint16(myPeer.PeerObject.P2P_Port)}
+					 constructMessage := models.ConstructTunnel{NetworkVersion: "IPv4", DestinationHostkey: []byte("KEY"), DestinationAddress: ipAdd, OnionPort: uint16(myPeer.PeerObject.UDPPort), TCPPort:uint16(myPeer.PeerObject.P2P_Port), TunnelID: tunnelID}
 					 message := services.CreateConstructTunnelMessage(constructMessage)
 
 					 myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write(message)
