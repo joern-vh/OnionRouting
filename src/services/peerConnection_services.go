@@ -106,7 +106,6 @@ func handleMessages (conn net.Conn) {
 				CommunicationChannelTCPErrors <- err
 			}*/
 
-			log.Println("New message ", scanner.Bytes())
 			// Pass newMessage into TCPMessageChannel
 			CommunicationChannelTCPMessages <- TCPMessageChannel{scanner.Bytes(), conn.RemoteAddr().String()}
 		}
@@ -201,7 +200,7 @@ func (peer *Peer) CreateTCPWriter (destinationIP string, tcpPort int ) (*models.
 
 // Creates a new TCPConnection for the peer with the left writer already set
 func (peer *Peer) CreateInitialTCPConnection(tunnelId uint32, leftWriter *models.TCPWriter) {
-	peer.PeerObject.TCPConnections[tunnelId] = &models.TCPConnection{tunnelId, leftWriter, nil}
+	peer.PeerObject.TCPConnections[tunnelId] = &models.TCPConnection{tunnelId, leftWriter, nil, nil}
 }
 
 // SendMessage gets address, port and message(type byte) to send it to one peer

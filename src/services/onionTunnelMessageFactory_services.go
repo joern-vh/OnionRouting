@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"net"
-	"log"
 	"models"
 	"time"
 )
@@ -54,13 +53,11 @@ func CreateConstructTunnelMessage(constructTunnel models.ConstructTunnel) ([]byt
 	message = append(message, tunnelIDBuf.Bytes()...)
 
 	// Convert destinationAddress to Byte Array
-	log.Printf("IP: %x\n", []byte(ip))
 	message = append(message, ip...)
 
 	// Append destinationHostkey to Message Array
 	message = append(message, constructTunnel.DestinationHostkey...)
 
-	log.Println("KEY SIZE: ", len(constructTunnel.DestinationHostkey))
 
 	// Append Delimiter
 	message = append(message, []byte("\r\n")...)
