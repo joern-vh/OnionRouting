@@ -99,11 +99,18 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 
 		// CONFIRM TUNNEL INSTRUCTION
 		case 570:
+			log.Println("CONFIRM TUNNEL INSTRUCTION")
 			tunnelID := binary.BigEndian.Uint32(messageChannel.Message[4:12])
 			data := messageChannel.Message[4:]
-
 			log.Println("TunnelID: ", tunnelID)
 			log.Println("Data: ", data)
+
+			command := binary.BigEndian.Uint16(data[0:2])
+			switch command {
+			case 568:
+				log.Println("Got a confirmation for a ")
+				break
+			}
 			break
 
 		// EXCHANGE KEY
@@ -154,7 +161,10 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *s
 		log.Println("Error creating tcp writer, error: " + err.Error())
 	}
 
-	myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID] = &models.TCPConnection{constructTunnelMessage.TunnelID, nil, newTCPWriter, nil}
+	var slice []models.ConnnectionOrderObject
+	myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID] = &models.TCPConnection{constructTunnelMessage.TunnelID, nil, newTCPWriter, slice}
+	// Now just add the right connection to the map with status pending
+	myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID].ConnectionOrder = append(myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID].ConnectionOrder, models.ConnnectionOrderObject{TunnelId:constructTunnelMessage.TunnelID, IpAddress:destinationAddress, IpPort:4200, Confirmed:false})
 	n, _ := myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID].RightWriter.TCPWriter.Write(message)
 
 	log.Println("Size: ", n)
@@ -224,6 +234,8 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 	onionPort := binary.BigEndian.Uint16(messageChannel.Message[4:6])
 	tunnelID := binary.BigEndian.Uint32(messageChannel.Message[6:10])
 	//destinationHostkey := messageChannel.Message[10:]
+	log.Println(tunnelID)
+	log.Println(myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder)
 
 	if myPeer.PeerObject.TCPConnections[tunnelID].LeftWriter != nil {
 		// Forward to left a confirmTunnelInstruction
@@ -237,6 +249,12 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 		messageTypeBuf := new(bytes.Buffer)
 		binary.Write(messageTypeBuf, binary.BigEndian, uint16(567))
 		data := messageTypeBuf.Bytes()
+		log.Println("JAAAAAA")
+		// Get ip and update connection state in the list
+		//ip := net.IP(data[2:6]).String()
+
+
+
 
 
 		ipAddr := net.ParseIP("192.168.0.10")
