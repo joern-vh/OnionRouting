@@ -149,7 +149,7 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *s
 	constructTunnelMessage := models.ConstructTunnel{NetworkVersion: networkVersionString, DestinationHostkey: []byte("KEY"), TunnelID: newTunnelID, DestinationAddress: destinationAddress, OnionPort: uint16(myPeer.PeerObject.UDPPort), TCPPort: uint16(myPeer.PeerObject.P2P_Port)}
 	message := services.CreateConstructTunnelMessage(constructTunnelMessage)
 
-	newTCPWriter, err := myPeer.CreateTCPWriter(destinationAddress, 4200)
+	newTCPWriter, err := myPeer.CreateTCPWriter(destinationAddress, 3000)
 	if err != nil {
 		log.Println("Error creating tcp writer, error: " + err.Error())
 	}
@@ -233,7 +233,7 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 	data := messageTypeBuf.Bytes()
 
 
-	ipAddr := net.ParseIP("192.168.0.10")
+	ipAddr := net.ParseIP("192.168.0.15")
 	data = append(data, ipAddr.To4()...)
 
 	portBuf := new(bytes.Buffer)
