@@ -265,7 +265,7 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *se
 	}
 
 	// If everything worked out, send confirmTunnelConstruction back
-	confirmTunnelConstruction := models.ConfirmTunnelConstruction{TunnelID: tunnelID, Port: uint16(myPeer.PeerObject.UDPPort), DestinationHostkey: destinationHostkey}
+	confirmTunnelConstruction := models.ConfirmTunnelConstruction{TunnelID: tunnelID, Port: uint16(myPeer.PeerObject.UDPPort), DestinationHostkey: x509.MarshalPKCS1PublicKey(myPeer.PeerObject.PublicKey)}
 	message := services.CreateConfirmTunnelCronstructionMessage(confirmTunnelConstruction)
 
 	myPeer.PeerObject.TCPConnections[tunnelID].LeftWriter.TCPWriter.Write(message)
@@ -306,7 +306,12 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 		// We received a confirmation from out final destination, send ready message
 		if bytes.Equal(hashedVersion, myPeer.PeerObject.TCPConnections[tunnelID].FinalDestinationHostkey) {
 			log.Println("Yes, we've connected to our final destination")
-			// TODO: OnionTunnelReady einfügen
+
+			onionTunnelReady := models.OnionTunnelReady{TunnelID: tunnelID, DestinationHostkey: myPeer.PeerObject.TCPConnections[tunnelID].FinalDestinationHostkey}
+			onionTunnelReadyMessage := services.CreateOnionTunnelReady(onionTunnelReady)
+
+			// TODO: Send OnionTunnelReady to CM/UI module.
+			log.Println(onionTunnelReadyMessage)
 		}
 
 		// Convert messageType to Byte array
