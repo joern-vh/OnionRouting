@@ -10,15 +10,16 @@ import (
 // TODO: Discuss wether to define it here or to define in it in the service packe >> Downside here is that calling with Peer as caller isn't possible
 // Peer is the standard object for a running peer that is accepting connections
 type Peer struct {
-	TCPListener		*net.TCPListener				`json:"tcp_listener"`
-	UDPListener		*net.UDPConn 					`json:"udp_listener"`
-	UDPPort			int 							`json:"udp_port"`
-	P2P_Port		int								`json:"p2p_port"`			// This is the Port for the TCP port
-	P2P_Hostname	string							`json:"p2p_hostname"`		// This is the ip address of the peer
-	PrivateKey		*rsa.PrivateKey					`json:"private_key"`
-	PublicKey		*rsa.PublicKey 					`json:"public_key"`
-	UDPConnections	map[uint32]*UDPConnection 		`json:"udp_connections"`
-	TCPConnections	map[uint32]*TCPConnection 		`json:"tcp_writers"`
+	TCPListener			*net.TCPListener				`json:"tcp_listener"`
+	UDPListener			*net.UDPConn 					`json:"udp_listener"`
+	UDPPort				int 							`json:"udp_port"`
+	P2P_Port			int								`json:"p2p_port"`			// This is the Port for the TCP port
+	P2P_Hostname		string							`json:"p2p_hostname"`		// This is the ip address of the peer
+	PrivateKey			*rsa.PrivateKey					`json:"private_key"`
+	PublicKey			*rsa.PublicKey 					`json:"public_key"`
+	UDPConnections		map[uint32]*UDPConnection 		`json:"udp_connections"`
+	TCPConnections		map[uint32]*TCPConnection 		`json:"tcp_writers"`
+	CryptoSessionMap	map[string]*CryptoObject 		`json:"crypto_session_map"`
 }
 
 // Identify by id in hashmap
@@ -38,8 +39,8 @@ type TCPWriter struct {
 
 type CryptoObject struct {
 	TunnelId		uint32 							`json:"tunnel_id"`
-	PrivateKey		[]byte 							`json:"tunnel_id"`
+	PrivateKey		*dhkx.DHKey 						`json:"tunnel_id"`
 	PublicKey		[]byte 							`json:"tunnel_id"`
 	SessionKey		[]byte 							`json:"tunnel_id"`
-	Group			dhkx.DHGroup 					`json:"tunnel_id"`
+	Group			*dhkx.DHGroup 					`json:"tunnel_id"`
 }

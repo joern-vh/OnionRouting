@@ -12,6 +12,7 @@ import (
 	"container/list"
 	"crypto/x509"
 	"bytes"
+	"strconv"
 )
 
 func StartTCPController(myPeer *services.Peer) {
@@ -266,7 +267,7 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *se
 	}
 
 	// Append the new TCPWriter as LeftTCPWriter to the TCP Connection
-	myPeer.CreateInitialTCPConnection(tunnelID, newTCPWriter)
+	myPeer.CreateInitialTCPConnection(tunnelID, destinationHostkey ,newTCPWriter)
 
 	//  Now, create new UDP Connection with this "sender" as left side
 	newUDPConnection, err := services.CreateInitialUDPConnection(ipAdd, int(onionPort), tunnelID, networkVersionString)
@@ -299,7 +300,6 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 
 		myPeer.PeerObject.TCPConnections[tunnelID].LeftWriter.TCPWriter.Write(message)
 	} else {
-
 		// Add hostkey to the list of available host, but first, convert it
 		newPublicKey, err := x509.ParsePKCS1PublicKey(destinationHostkey)
 		hashedVersion := services.GenerateIdentityOfKey(newPublicKey)
@@ -312,6 +312,13 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 		for e := myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder.Front(); e != nil; e = e.Next() {
 			fmt.Println("List value ", e.Value)
 		}
+
+		// Now, create a cryptoobject and add it to the hashmap of the tcpConnection
+		// First, generate identifier
+		destinationHostkeyString := fmt.Sprintf("%s", hashedVersion)
+		newIdentifier := strconv.Itoa(int(tunnelID)) + destinationHostkeyString
+		privateKey, publicKey, group := services.GeneratePreMasterKey()
+		myPeer.PeerObject.CryptoSessionMap[newIdentifier] = &models.CryptoObject{TunnelId:tunnelID, PublicKey:publicKey, PrivateKey:privateKey,SessionKey:nil, Group:group}
 
 		// We received a confirmation from out final destination, send ready message
 		if bytes.Equal(hashedVersion, myPeer.PeerObject.TCPConnections[tunnelID].FinalDestinationHostkey) {
