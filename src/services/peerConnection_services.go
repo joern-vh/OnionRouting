@@ -37,18 +37,18 @@ func CreateNewPeer(config *models.Config) (*Peer, error) {
 	newTCPListener, err := createTCPListener(config.P2P_Port)
 	if err != nil {
 		log.Println("CreatePeer: Problem creating TCP listener, error: ", err)
-		return &Peer{&models.Peer{nil , nil, 0, 0, "", nil, nil, nil, nil}}, err
+		return &Peer{&models.Peer{nil , nil, 0, 0, "", nil, nil, nil, nil, nil}}, err
 	}
 
 	// Create new UDPConn to listen for udp messages
 	newUDPListener, UDPPort, err := createUDPListener()
 	if err != nil {
 		log.Println("CreatePeer: Problem creating UDP listener, error: ", err)
-		return &Peer{&models.Peer{nil , nil, 0, 0, "", nil, nil, nil, nil}}, err
+		return &Peer{&models.Peer{nil , nil, 0, 0, "", nil, nil, nil, nil, nil}}, err
 	}
 
 	// Create new peer
-	newPeer := &Peer{&models.Peer{newTCPListener, newUDPListener,  UDPPort,config.P2P_Port, config.P2P_Hostname, config.PrivateKey, config.PublicKey, make(map[uint32] *models.UDPConnection), make(map[uint32] *models.TCPConnection)}}
+	newPeer := &Peer{&models.Peer{newTCPListener, newUDPListener,  UDPPort,config.P2P_Port, config.P2P_Hostname, config.PrivateKey, config.PublicKey, nil, make(map[uint32] *models.UDPConnection), make(map[uint32] *models.TCPConnection)}}
 
 	return newPeer, nil
 }

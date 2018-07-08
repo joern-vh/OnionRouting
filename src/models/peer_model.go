@@ -3,6 +3,7 @@ package models
 import (
 	"net"
 	"crypto/rsa"
+	"github.com/monnand/dhkx"
 )
 
 // TODO: Discuss wether to define it here or to define in it in the service packe >> Downside here is that calling with Peer as caller isn't possible
@@ -35,7 +36,15 @@ type ConnnectionOrderObject struct {
 }
 
 type TCPWriter struct {
-	DestinationIP		string		`json:"destination_ip"`
-	DestinationPort		int			`json:"destination_port"`
-	TCPWriter			net.Conn 	`json:"tcp_writer"`
+	DestinationIP		string					`json:"destination_ip"`
+	DestinationPort		int						`json:"destination_port"`
+	TCPWriter			net.Conn 				`json:"tcp_writer"`
+}
+
+type CryptoObject struct {
+	TunnelId		uint32 							`json:"tunnel_id"`
+	PrivateKey		[]byte 							`json:"tunnel_id"`
+	PublicKey		[]byte 							`json:"tunnel_id"`
+	SessionKey		[]byte 							`json:"tunnel_id"`
+	Group			dhkx.DHGroup 					`json:"tunnel_id"`
 }

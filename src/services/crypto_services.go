@@ -81,6 +81,13 @@ func DecryptKeyExchange(privateKey *rsa.PrivateKey, key []byte) ([]byte, error) 
 	return decryptedData, nil
 }
 
+// Generates an identity byte array based on SHA256 Hash
+func GenerateIdentityOfKey(pubKey *rsa.PublicKey) ([]byte) {
+	hash := sha256.Sum256(x509.MarshalPKCS1PublicKey(pubKey))
+
+	return hash[:]
+}
+
 // Encrypt Data with DH key.
 func EncryptData(key []byte, data []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
@@ -88,8 +95,6 @@ func EncryptData(key []byte, data []byte) ([]byte, error) {
 		return nil, errors.New("Crypto: New Error occurred while encrypting: " + err.Error())
 	}
 
-	// The IV needs to be unique, but not secure. Therefore it's common to
-	// include it at the beginning of the ciphertext.
 	ciphertext := make([]byte, aes.BlockSize+len(data))
 	iv := ciphertext[:aes.BlockSize]
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
@@ -111,10 +116,8 @@ func DecryptData(key []byte, data []byte) ([]byte, error) {
 		return nil, errors.New("Crypto: New Error occurred while decrypting: " + err.Error())
 	}
 
-	// The IV needs to be unique, but not secure. Therefore it's common to
-	// include it at the beginning of the ciphertext.
 	if len(data) < aes.BlockSize {
-		panic("ciphertext too short")
+		return nil, errors.New("Crypto: ciphertext too short")
 	}
 	iv := ciphertext[:aes.BlockSize]
 	ciphertext = ciphertext[aes.BlockSize:]
