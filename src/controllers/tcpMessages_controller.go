@@ -142,12 +142,22 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 			log.Println(messageChannel.Message[6:9])
 
 			sizeDestinationHostkey := binary.BigEndian.Uint16(messageChannel.Message[4:6])
+			endOfDestinationKey := 6 + sizeDestinationHostkey
 
-			destinationhostkey := messageChannel.Message[6:6+sizeDestinationHostkey]
+			destinationHostkey := messageChannel.Message[6:endOfDestinationKey]
+			newPublicKey, err := x509.ParsePKCS1PublicKey(destinationHostkey)
+			if err != nil {
+				log.Println("Couldn't convert []byte destinationHostKey to rsa Publickey, ", err.Error())
+			}
 
-			pubKey := messageChannel.Message[6+sizeDestinationHostkey:]
+			hashedIdentity := services.GenerateIdentityOfKey(newPublicKey)
 
-			log.Println("Destination Hostkey: ", string(destinationhostkey))
+			pubKey := messageChannel.Message[endOfDestinationKey:]
+
+			// Compute Ephemeral Key
+			
+
+			log.Println("Identity: ", hashedIdentity)
 			log.Println("PubKey: ", pubKey)
 
 			break
