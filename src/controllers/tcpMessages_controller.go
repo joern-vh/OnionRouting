@@ -69,7 +69,6 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 			 	// no right writer exists, handle data now to send the command
 			 	// first, determine the command out of data and execute the function
 			 	data := messageChannel.Message[8:]
-
 			 	command := binary.BigEndian.Uint16(data[0:2])
 			 	log.Println("Command to forward: ", command)
 
@@ -77,6 +76,7 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 				 // Construct tunnel
 				 case 567:
 					 ipAdd := net.IP(data[2:6]).String()
+					 destinationHostkey := data[6:]
 					 //tcpPort :=
 					 // now, create new TCP RightWriter for the right side
 					 newTCPWriter, err := myPeer.CreateTCPWriter(ipAdd, 4200)
@@ -84,8 +84,7 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 						 return errors.New("Error creating tcp writer, error: " + err.Error())
 					 }
 					 myPeer.PeerObject.TCPConnections[tunnelID].RightWriter = newTCPWriter
-
-					 constructMessage := models.ConstructTunnel{NetworkVersion: "IPv4", DestinationHostkey: []byte("KEY"), DestinationAddress: ipAdd, OnionPort: uint16(myPeer.PeerObject.UDPPort), TCPPort:uint16(myPeer.PeerObject.P2P_Port), TunnelID: tunnelID}
+					 constructMessage := models.ConstructTunnel{NetworkVersion: "IPv4", DestinationHostkey: destinationHostkey, DestinationAddress: ipAdd, OnionPort: uint16(myPeer.PeerObject.UDPPort), TCPPort:uint16(myPeer.PeerObject.P2P_Port), TunnelID: tunnelID}
 					 message := services.CreateConstructTunnelMessage(constructMessage)
 
 					 myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write(message)
