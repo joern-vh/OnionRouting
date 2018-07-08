@@ -115,11 +115,13 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 
 		// EXCHANGE KEY
 		case 571:
+			log.Println(messageChannel.Message[6:9])
+
 			sizeDestinationHostkey := binary.BigEndian.Uint16(messageChannel.Message[4:6])
 
-			destinationhostkey := messageChannel.Message[6:sizeDestinationHostkey-1]
+			destinationhostkey := messageChannel.Message[6:6+sizeDestinationHostkey]
 
-			pubKey := messageChannel.Message[sizeDestinationHostkey-1:]
+			pubKey := messageChannel.Message[6+sizeDestinationHostkey:]
 
 			log.Println("Destination Hostkey: ", string(destinationhostkey))
 			log.Println("PubKey: ", pubKey)
