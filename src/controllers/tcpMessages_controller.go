@@ -265,6 +265,10 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *se
 		return nil, errors.New("handleConstructTunnel: " + err.Error())
 	}
 
+	// Now, create the crypto object and add it with the tunnel id to our peer
+	privateKey, publicKey, group := services.GeneratePreMasterKey()
+	myPeer.PeerObject.CryptoSessionMap[strconv.Itoa(int(tunnelID))] = &models.CryptoObject{TunnelId:tunnelID, PrivateKey:privateKey, PublicKey:publicKey, SessionKey:nil, Group:group}
+	log.Println(myPeer.PeerObject.CryptoSessionMap[strconv.Itoa(int(tunnelID))])
 	// If everything worked out, send confirmTunnelConstruction back
 	confirmTunnelConstruction := models.ConfirmTunnelConstruction{TunnelID: tunnelID, Port: uint16(myPeer.PeerObject.UDPPort), DestinationHostkey: x509.MarshalPKCS1PublicKey(myPeer.PeerObject.PublicKey)}
 	message := services.CreateConfirmTunnelCronstructionMessage(confirmTunnelConstruction)
