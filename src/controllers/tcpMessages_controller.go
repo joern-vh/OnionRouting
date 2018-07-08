@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"container/list"
 	"crypto/x509"
+	"bytes"
 )
 
 func StartTCPController(myPeer *services.Peer) {
@@ -191,7 +192,12 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *s
 		log.Println("Error creating tcp writer, error: " + err.Error())
 	}
 
-	myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID] = &models.TCPConnection{constructTunnelMessage.TunnelID, nil, newTCPWriter, list.New()}
+	// Generate hash of the final destination hoskey
+	newPublicKey, err := x509.ParsePKCS1PublicKey(destinationHostkey)
+	if err != nil {
+		log.Println("Couldn't convert []byte destinationHostKey to rsa Publickey, ", err.Error())
+	}
+	myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID] = &models.TCPConnection{constructTunnelMessage.TunnelID, nil, newTCPWriter, list.New(), services.GenerateIdentityOfKey(newPublicKey)}
 	// Now just add the right connection to the map with status pending
 	//myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID].ConnectionOrder = append(myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID].ConnectionOrder, models.ConnnectionOrderObject{TunnelId:constructTunnelMessage.TunnelID, IpAddress:destinationAddress, IpPort:4200, Confirmed:false})
 	n, _ := myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID].RightWriter.TCPWriter.Write(message)
@@ -286,14 +292,21 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 
 		// Add hostkey to the list of available host, but first, convert it
 		newPublicKey, err := x509.ParsePKCS1PublicKey(destinationHostkey)
+		hashedVersion := services.GenerateIdentityOfKey(newPublicKey)
 		if err != nil {
 			log.Println("Couldn't convert []byte destinationHostKey to rsa Publickey, ", err.Error())
 		}
-		myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder.PushFront(services.GenerateIdentityOfKey(newPublicKey))
+		myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder.PushFront(hashedVersion)
 
 		// Iterate through list and print its contents.
 		for e := myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder.Front(); e != nil; e = e.Next() {
 			fmt.Println("List value ", e.Value)
+		}
+
+		// We received a confirmation from out final destination, send ready message
+		if bytes.Equal(hashedVersion, myPeer.PeerObject.TCPConnections[tunnelID].FinalDestinationHostkey) {
+			log.Println("Yes, we've connected to our final destination")
+			// TODO: OnionTunnelReady einfügen
 		}
 
 		// Convert messageType to Byte array

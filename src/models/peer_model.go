@@ -23,17 +23,11 @@ type Peer struct {
 
 // Identify by id in hashmap
 type TCPConnection struct {
-	TunnelId		uint32 							`json:"tunnel_id"`
-	LeftWriter		*TCPWriter 						`json:"left_writer"`
-	RightWriter		*TCPWriter 						`json:"right_writer"`
-	ConnectionOrder	*list.List						`json:"connection_order"`
-}
-
-type ConnnectionOrderObject struct {
-	TunnelId		uint32 			`json:"tunnel_id"`
-	IpAddress		string 			`json:"ip_address"`
-	IpPort			int 			`json:"ip_port"`
-	Confirmed 		bool 			`json:"confirmed"`
+	TunnelId				uint32 							`json:"tunnel_id"`
+	LeftWriter				*TCPWriter 						`json:"left_writer"`
+	RightWriter				*TCPWriter 						`json:"right_writer"`
+	ConnectionOrder			*list.List						`json:"connection_order"`
+	FinalDestinationHostkey	[]byte 							`json:"final_destination_hostkey"`
 }
 
 type TCPWriter struct {
