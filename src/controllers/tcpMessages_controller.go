@@ -77,6 +77,7 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 			 	data := messageChannel.Message[8:]
 			 	command := binary.BigEndian.Uint16(data[0:2])
 			 	log.Println("Command to forward: ", command)
+			 	log.Println(data)
 
 				 switch command {
 				 // Construct tunnel
@@ -85,8 +86,6 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 					 var networkVersionString string
 					 var ipAdd string
 					 var destinationHostkey []byte
-
-					 fmt.Println("SIZE OF ONION TUNNEL BUILD: ", len(messageChannel.Message))
 
 					 if networkVersion == 0 {
 						 networkVersionString = "IPv4"
@@ -97,7 +96,7 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 						 ipAdd = net.IP(messageChannel.Message[8:24]).String()
 						 destinationHostkey = messageChannel.Message[24:]
 					 }
-
+						log.Println(ipAdd)
 
 					 //tcpPort :=
 					 // now, create new TCP RightWriter for the right side
@@ -109,6 +108,7 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 					 constructMessage := models.ConstructTunnel{NetworkVersion: networkVersionString, DestinationHostkey: destinationHostkey, DestinationAddress: ipAdd, OnionPort: uint16(myPeer.PeerObject.UDPPort), TCPPort:uint16(myPeer.PeerObject.P2P_Port), TunnelID: tunnelID}
 					 message := services.CreateConstructTunnelMessage(constructMessage)
 
+					 log.Println("Yes, i was here")
 					 myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write(message)
 					 break
 
