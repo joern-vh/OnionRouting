@@ -162,7 +162,7 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *s
 	//Construct Tunnel Message
 	newTunnelID := services.CreateTunnelID()
 	log.Println("NewTunnelID: ", newTunnelID)
-	constructTunnelMessage := models.ConstructTunnel{NetworkVersion: networkVersionString, DestinationHostkey: []byte("KEY"), TunnelID: newTunnelID, DestinationAddress: destinationAddress, OnionPort: uint16(myPeer.PeerObject.UDPPort), TCPPort: uint16(myPeer.PeerObject.P2P_Port)}
+	constructTunnelMessage := models.ConstructTunnel{NetworkVersion: networkVersionString, DestinationHostkey: destinationHostkey, TunnelID: newTunnelID, DestinationAddress: destinationAddress, OnionPort: uint16(myPeer.PeerObject.UDPPort), TCPPort: uint16(myPeer.PeerObject.P2P_Port)}
 	message := services.CreateConstructTunnelMessage(constructTunnelMessage)
 
 	newTCPWriter, err := myPeer.CreateTCPWriter(destinationAddress, 3000)
@@ -180,7 +180,7 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *s
 	log.Printf("Network Version: %s\n", networkVersionString)
 	log.Printf("Onion Port: %d\n", onionPort)
 	log.Printf("Destination Address: %s\n", destinationAddress)
-	log.Printf("Destination Hostkey: %s\n", destinationHostkey)
+	log.Printf("Destination Hostkey: %x\n", destinationHostkey)
 }
 
 func handleOnionTunnelDestroy(messageChannel services.TCPMessageChannel) {
@@ -255,7 +255,7 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 		// Add hostkey to the list of available host, but first, convert it
 		newPublicKey, err := x509.ParsePKCS1PublicKey(destinationHostkey)
 		if err != nil {
-			log.Println("Couldn't convert []byte destinationHostKey to rsa Publickey")
+			log.Println("Couldn't convert []byte destinationHostKey to rsa Publickey, ", err.Error())
 		}
 		myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder.PushFront(services.GenerateIdentityOfKey(newPublicKey))
 

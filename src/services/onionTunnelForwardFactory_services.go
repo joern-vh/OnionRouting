@@ -16,12 +16,6 @@ func CreateDataConstructTunnel(dataConstructTunnel models.DataConstructTunnel) (
 	binary.Write(messageTypeBuf, binary.BigEndian, command)
 	message := messageTypeBuf.Bytes()
 
-	// Convert tunnelID to Byte Array
-	tunnelIDBuf := new(bytes.Buffer)
-	//newID := CreateTunnelID()
-	binary.Write(tunnelIDBuf, binary.BigEndian, dataConstructTunnel.TunnelID)
-	message = append(message, tunnelIDBuf.Bytes()...)
-
 	/*****
 		Reserved and networkVersion
 	 	Convert networkVersion to Byte Array
@@ -43,6 +37,29 @@ func CreateDataConstructTunnel(dataConstructTunnel models.DataConstructTunnel) (
 
 	// Append destinationHostkey to Message Array
 	message = append(message, dataConstructTunnel.DestinationHostkey...)
+
+	// Append Delimiter
+	message = append(message, []byte("\r\n")...)
+
+	// Prepend size of message
+	sizeBuf := new(bytes.Buffer)
+	binary.Write(sizeBuf, binary.BigEndian, uint16(len(message)+2))
+	message = append(sizeBuf.Bytes(), message...)
+
+	return message
+}
+
+func CreateDataConfirmTunnelConstruction(dataConfirmTunnelConstruction models.DataConfirmTunnelConstruction) ([]byte) {
+	// Message Type
+	command := uint16(568)
+
+	// Convert command to Byte array
+	messageTypeBuf := new(bytes.Buffer)
+	binary.Write(messageTypeBuf, binary.BigEndian, command)
+	message := messageTypeBuf.Bytes()
+
+	// Append destinationHostkey to Message Array
+	message = append(message, dataConfirmTunnelConstruction.DestinationHostkey...)
 
 	// Append Delimiter
 	message = append(message, []byte("\r\n")...)
