@@ -81,7 +81,7 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 				 switch command {
 				 // Construct tunnel
 				 case 567:
-					 networkVersion := binary.BigEndian.Uint16(messageChannel.Message[4:6])
+					 networkVersion := binary.BigEndian.Uint16(data[2:4])
 					 var networkVersionString string
 					 var ipAdd string
 					 var destinationHostkey []byte
@@ -90,12 +90,12 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 
 					 if networkVersion == 0 {
 						 networkVersionString = "IPv4"
-						 ipAdd = net.IP(data[2:6]).String()
-						 destinationHostkey = messageChannel.Message[12:]
+						 ipAdd = net.IP(data[4:8]).String()
+						 destinationHostkey = messageChannel.Message[8:]
 					 } else if networkVersion == 1 {
 						 networkVersionString = "IPv6"
-						 ipAdd = net.IP(messageChannel.Message[8:24]).String()
-						 destinationHostkey = messageChannel.Message[24:]
+						 ipAdd = net.IP(messageChannel.Message[4:20]).String()
+						 destinationHostkey = messageChannel.Message[20:]
 					 }
 
 
@@ -208,6 +208,7 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *s
 	//Construct Tunnel Message
 	newTunnelID := services.CreateTunnelID()
 	log.Println("NewTunnelID: ", newTunnelID)
+	log.Println("IP: ", destinationAddress)
 	constructTunnelMessage := models.ConstructTunnel{NetworkVersion: networkVersionString, DestinationHostkey: destinationHostkey, TunnelID: newTunnelID, DestinationAddress: destinationAddress, OnionPort: uint16(myPeer.PeerObject.UDPPort), TCPPort: uint16(myPeer.PeerObject.P2P_Port)}
 	message := services.CreateConstructTunnelMessage(constructTunnelMessage)
 
@@ -375,6 +376,7 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 		dataMessage := models.DataConstructTunnel{NetworkVersion: "IPv4", DestinationAddress: "192.168.0.15", DestinationHostkey: destinationHostkey}
 		data := services.CreateDataConstructTunnel(dataMessage)
 
+		log.Println(data)
 
 		// Now, just for tests, send a forward to a new peer
 		tunnelInstructionMessage := models.TunnelInstruction{TunnelID: tunnelID, Data: data}
