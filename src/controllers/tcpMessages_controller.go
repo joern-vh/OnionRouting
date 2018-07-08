@@ -9,7 +9,6 @@ import (
 
 	"models"
 	"fmt"
-	"bytes"
 	"container/list"
 	"crypto/x509"
 )
@@ -267,13 +266,13 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 		}
 
 		// Convert messageType to Byte array
-		messageTypeBuf := new(bytes.Buffer)
+		/*messageTypeBuf := new(bytes.Buffer)
 		binary.Write(messageTypeBuf, binary.BigEndian, uint16(567))
 		data := messageTypeBuf.Bytes()
-
+		*/
 		log.Println(myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder)
-		ip := net.IP(data[2:6]).String()
-		log.Println(ip)
+		//ip := net.IP(data[2:6]).String()
+		//log.Println(ip)
 		// geht the element wit the right ip and set its value to confirm: true
 		/*for i := range myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder {
 			if myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder[i].IpAddress == ip {
@@ -281,14 +280,17 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 			}
 		}*/
 
-		ipAddr := net.ParseIP("192.168.0.15")
+		//ipAddr := net.ParseIP("192.168.0.15")
 		log.Println(myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder)
 
-		data = append(data, ipAddr.To4()...)
+		/*data = append(data, ipAddr.To4()...)
 
 		portBuf := new(bytes.Buffer)
 		binary.Write(portBuf, binary.BigEndian, uint16(4200))
-		data = append(data, portBuf.Bytes()...)
+		data = append(data, portBuf.Bytes()...)*/
+
+		dataMessage := models.DataConstructTunnel{NetworkVersion: "IPv4", DestinationAddress: "192.168.0.15", DestinationHostkey: destinationHostkey}
+		data := services.CreateDataConstructTunnel(dataMessage)
 
 
 		// Now, just for tests, send a forward to a new peer

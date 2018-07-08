@@ -30,7 +30,7 @@ func CreateDataConstructTunnel(dataConstructTunnel models.DataConstructTunnel) (
 		binary.Write(networkVersionBuf, binary.BigEndian, uint16(1))
 		ip.To16()
 	}
-	message = append(message, networkVersionBuf.Bytes()...)
+	//message = append(message, networkVersionBuf.Bytes()...)
 
 	// Convert destinationAddress to Byte Array
 	message = append(message, ip...)
