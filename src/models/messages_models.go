@@ -62,5 +62,6 @@ type ConfirmTunnelInstruction struct {
 }
 
 type ExchangeKey struct {
+	DestinationHostkey		[]byte
 	PublicKey				[]byte
 }

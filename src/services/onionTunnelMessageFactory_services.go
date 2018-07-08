@@ -168,7 +168,15 @@ func CreateExchangeKey(exchangeKey models.ExchangeKey) ([]byte) {
 	binary.Write(messageTypeBuf, binary.BigEndian, messageType)
 	message := messageTypeBuf.Bytes()
 
-	// ToDo: Encrypt Data.
+	// Append size of Destination Hostkey
+	destinationHostkeyLengthBuf := new(bytes.Buffer)
+	binary.Write(destinationHostkeyLengthBuf, binary.BigEndian, uint16(len(exchangeKey.DestinationHostkey)))
+	message = append(message, destinationHostkeyLengthBuf.Bytes()...)
+
+	// Append Destination Hostkey
+	message = append(message, exchangeKey.DestinationHostkey...)
+
+	// Append Public Key
 	message = append(message, exchangeKey.PublicKey...)
 
 	// Append Delimiter
