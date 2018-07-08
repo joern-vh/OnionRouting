@@ -10,6 +10,8 @@ import (
 	"models"
 	"fmt"
 	"bytes"
+	"container/list"
+	"crypto/x509"
 )
 
 func StartTCPController(myPeer *services.Peer) {
@@ -168,10 +170,9 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *s
 		log.Println("Error creating tcp writer, error: " + err.Error())
 	}
 
-	var slice []models.ConnnectionOrderObject
-	myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID] = &models.TCPConnection{constructTunnelMessage.TunnelID, nil, newTCPWriter, slice}
+	myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID] = &models.TCPConnection{constructTunnelMessage.TunnelID, nil, newTCPWriter, list.New()}
 	// Now just add the right connection to the map with status pending
-	myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID].ConnectionOrder = append(myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID].ConnectionOrder, models.ConnnectionOrderObject{TunnelId:constructTunnelMessage.TunnelID, IpAddress:destinationAddress, IpPort:4200, Confirmed:false})
+	//myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID].ConnectionOrder = append(myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID].ConnectionOrder, models.ConnnectionOrderObject{TunnelId:constructTunnelMessage.TunnelID, IpAddress:destinationAddress, IpPort:4200, Confirmed:false})
 	n, _ := myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID].RightWriter.TCPWriter.Write(message)
 
 	log.Println("Size: ", n)
@@ -240,9 +241,7 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 
 	onionPort := binary.BigEndian.Uint16(messageChannel.Message[4:6])
 	tunnelID := binary.BigEndian.Uint32(messageChannel.Message[6:10])
-	//destinationHostkey := messageChannel.Message[10:]
-	log.Println(tunnelID)
-	log.Println(myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder)
+	destinationHostkey := messageChannel.Message[10:]
 
 	if myPeer.PeerObject.TCPConnections[tunnelID].LeftWriter != nil {
 		// Forward to left a confirmTunnelInstruction
@@ -252,21 +251,33 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 
 		myPeer.PeerObject.TCPConnections[tunnelID].LeftWriter.TCPWriter.Write(message)
 	} else {
+
+		// Add hostkey to the list of available host, but first, convert it
+		newPublicKey, err := x509.ParsePKCS1PublicKey(destinationHostkey)
+		if err != nil {
+			log.Println("Couldn't convert []byte destinationHostKey to rsa Publickey")
+		}
+		myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder.PushFront(services.GenerateIdentityOfKey(newPublicKey))
+
+		// Iterate through list and print its contents.
+		for e := myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder.Front(); e != nil; e = e.Next() {
+			fmt.Println("List value ", e.Value)
+		}
+
 		// Convert messageType to Byte array
 		messageTypeBuf := new(bytes.Buffer)
 		binary.Write(messageTypeBuf, binary.BigEndian, uint16(567))
 		data := messageTypeBuf.Bytes()
-		log.Println("JAAAAAA")
 
 		log.Println(myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder)
 		ip := net.IP(data[2:6]).String()
 		log.Println(ip)
 		// geht the element wit the right ip and set its value to confirm: true
-		for i := range myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder {
+		/*for i := range myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder {
 			if myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder[i].IpAddress == ip {
 				myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder[i].Confirmed = true
 			}
-		}
+		}*/
 
 		ipAddr := net.ParseIP("192.168.0.15")
 		log.Println(myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder)
