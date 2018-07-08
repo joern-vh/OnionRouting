@@ -168,6 +168,11 @@ func CreateExchangeKey(exchangeKey models.ExchangeKey) ([]byte) {
 	binary.Write(messageTypeBuf, binary.BigEndian, messageType)
 	message := messageTypeBuf.Bytes()
 
+	// Convert tunnelID to Byte Array
+	tunnelIDBuf := new(bytes.Buffer)
+	binary.Write(tunnelIDBuf, binary.BigEndian, exchangeKey.TunnelID)
+	message = append(message, tunnelIDBuf.Bytes()...)
+
 	// Append size of Destination Hostkey
 	destinationHostkeyLengthBuf := new(bytes.Buffer)
 	binary.Write(destinationHostkeyLengthBuf, binary.BigEndian, uint16(len(exchangeKey.DestinationHostkey)))
