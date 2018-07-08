@@ -35,6 +35,11 @@ func CreateDataConstructTunnel(dataConstructTunnel models.DataConstructTunnel) (
 	// Convert destinationAddress to Byte Array
 	message = append(message, ip...)
 
+	// Convert port to Byte Array
+	portBuf := new(bytes.Buffer)
+	binary.Write(portBuf, binary.BigEndian, dataConstructTunnel.Port)
+	message = append(message, portBuf.Bytes()...)
+
 	// Append destinationHostkey to Message Array
 	message = append(message, dataConstructTunnel.DestinationHostkey...)
 
