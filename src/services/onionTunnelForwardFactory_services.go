@@ -38,14 +38,6 @@ func CreateDataConstructTunnel(dataConstructTunnel models.DataConstructTunnel) (
 	// Append destinationHostkey to Message Array
 	message = append(message, dataConstructTunnel.DestinationHostkey...)
 
-	// Append Delimiter
-	message = append(message, []byte("\r\n")...)
-
-	// Prepend size of message
-	sizeBuf := new(bytes.Buffer)
-	binary.Write(sizeBuf, binary.BigEndian, uint16(len(message)+2))
-	message = append(sizeBuf.Bytes(), message...)
-
 	return message
 }
 
@@ -60,14 +52,6 @@ func CreateDataConfirmTunnelConstruction(dataConfirmTunnelConstruction models.Da
 
 	// Append destinationHostkey to Message Array
 	message = append(message, dataConfirmTunnelConstruction.DestinationHostkey...)
-
-	// Append Delimiter
-	message = append(message, []byte("\r\n")...)
-
-	// Prepend size of message
-	sizeBuf := new(bytes.Buffer)
-	binary.Write(sizeBuf, binary.BigEndian, uint16(len(message)+2))
-	message = append(sizeBuf.Bytes(), message...)
 
 	return message
 }
