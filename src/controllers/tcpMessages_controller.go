@@ -150,21 +150,21 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 			sizeDestinationHostkey := binary.BigEndian.Uint16(messageChannel.Message[8:10])
 			endOfDestinationKey := 10 + sizeDestinationHostkey
 
-			destinationHostkey := messageChannel.Message[10:endOfDestinationKey]
-			newPublicKey, err := x509.ParsePKCS1PublicKey(destinationHostkey)
+			//destinationHostkey := messageChannel.Message[10:endOfDestinationKey]
+			/*newPublicKey, err := x509.ParsePKCS1PublicKey(destinationHostkey)
 			if err != nil {
 				log.Println("Couldn't convert []byte destinationHostKey to rsa Publickey, ", err.Error())
-			}
+			}*/
 
-			hashedIdentity := services.GenerateIdentityOfKey(newPublicKey)
+			//hashedIdentity := services.GenerateIdentityOfKey(newPublicKey)
 
 			pubKey := messageChannel.Message[endOfDestinationKey:]
 
 
 			// Compute Ephemeral Key
 			// First, generate identifier
-			destinationHostkeyString := fmt.Sprintf("%s", hashedIdentity)
-			identifier := strconv.Itoa(int(tunnelID)) + destinationHostkeyString
+			//destinationHostkeyString := fmt.Sprintf("%s", hashedIdentity)
+			identifier := strconv.Itoa(int(tunnelID))
 			cryptoObject := myPeer.PeerObject.CryptoSessionMap[identifier]
 
 			sessionKey := services.ComputeEphemeralKey(cryptoObject.Group, pubKey, cryptoObject.PrivateKey)
@@ -390,7 +390,9 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 
 
 		// KEY EXCHANGE TESTING
-		keyExchange := models.ExchangeKey{PublicKey: myPeer.PeerObject.CryptoSessionMap[newIdentifier].PublicKey, TunnelID: tunnelID, DestinationHostkey: destinationHostkey}
+
+		log.Println("TESTING: ", services.GenerateIdentityOfKey(myPeer.PeerObject.PublicKey))
+		keyExchange := models.ExchangeKey{PublicKey: myPeer.PeerObject.CryptoSessionMap[newIdentifier].PublicKey, TunnelID: tunnelID, DestinationHostkey: x509.MarshalPKCS1PublicKey(myPeer.PeerObject.PublicKey)}
 		keyExchangeMessage := services.CreateExchangeKey(keyExchange)
 
 		myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write(keyExchangeMessage)
