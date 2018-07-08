@@ -4,6 +4,7 @@ import (
 	"net"
 	"crypto/rsa"
 	"github.com/monnand/dhkx"
+	"container/list"
 )
 
 // TODO: Discuss wether to define it here or to define in it in the service packe >> Downside here is that calling with Peer as caller isn't possible
@@ -25,7 +26,7 @@ type TCPConnection struct {
 	TunnelId		uint32 							`json:"tunnel_id"`
 	LeftWriter		*TCPWriter 						`json:"left_writer"`
 	RightWriter		*TCPWriter 						`json:"right_writer"`
-	ConnectionOrder []ConnnectionOrderObject		`json:"connection_order"`
+	ConnectionOrder	*list.List						`json:"connection_order"`
 }
 
 type ConnnectionOrderObject struct {
