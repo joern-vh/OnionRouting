@@ -246,7 +246,8 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 
 	if myPeer.PeerObject.TCPConnections[tunnelID].LeftWriter != nil {
 		// Forward to left a confirmTunnelInstruction
-		data := []byte("TEST")
+		dataMessage := models.DataConfirmTunnelConstruction{DestinationHostkey: destinationHostkey}
+		data := services.CreateDataConfirmTunnelConstruction(dataMessage)
 		confirmTunnelInstruction := models.ConfirmTunnelInstruction{TunnelID: tunnelID, Data: data}
 		message := services.CreateConfirmTunnelInstruction(confirmTunnelInstruction)
 
