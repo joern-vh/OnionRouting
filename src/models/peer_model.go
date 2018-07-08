@@ -29,9 +29,9 @@ type TCPConnection struct {
 
 type ConnnectionOrderObject struct {
 	TunnelId		uint32 			`json:"tunnel_id"`
-	IpAddress		string 						`json:"ip_address"`
-	IpPort			int 						`json:"ip_port"`
-	Confirmed 		bool 						`json:"confirmed"`
+	IpAddress		string 			`json:"ip_address"`
+	IpPort			int 			`json:"ip_port"`
+	Confirmed 		bool 			`json:"confirmed"`
 }
 
 type TCPWriter struct {
