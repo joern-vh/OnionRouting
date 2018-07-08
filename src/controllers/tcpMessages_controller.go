@@ -108,6 +108,7 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 			log.Println("Data: ", data)
 
 			command := binary.BigEndian.Uint16(data[0:2])
+			log.Println("Command: ", command)
 			switch command {
 			case 568:
 				log.Println("Got a confirmation for a tunnel construction")
