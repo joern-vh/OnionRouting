@@ -39,6 +39,11 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 			handleOnionTunnelDestroy(messageChannel)
 			break
 
+		// ONION TUNNEL DATA
+		case 564:
+			handleOnionTunnelData(messageChannel, myPeer)
+			break
+
 		// CONSTRUCT TUNNEL
 		case 567:
 			newUDPConnection, err := handleConstructTunnel(messageChannel, myPeer)
@@ -204,6 +209,16 @@ func handleOnionTunnelDestroy(messageChannel services.TCPMessageChannel) {
 	tunnelID := binary.BigEndian.Uint32(messageChannel.Message[4:8])
 	log.Printf("Tunnel ID: %s\n", tunnelID)
 }
+
+
+func handleOnionTunnelData(messageChannel services.TCPMessageChannel, myPeer *services.Peer) {
+	tunnelID := binary.BigEndian.Uint32(messageChannel.Message[4:8])
+	data := messageChannel.Message[8:]
+
+	log.Printf("Tunnel ID: %s\n", tunnelID)
+	log.Printf("Tunnel ID: %x\n", data)
+}
+
 
 func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *services.Peer) (*models.UDPConnection, error) {
 	var networkVersionString string
