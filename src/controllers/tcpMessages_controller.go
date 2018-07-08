@@ -140,7 +140,10 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 
 		// EXCHANGE KEY
 		case 571:
+			log.Println("EXCHANGE KEY")
 			log.Println(messageChannel.Message[6:9])
+
+			tunnelID := uint32(92374)
 
 			sizeDestinationHostkey := binary.BigEndian.Uint16(messageChannel.Message[4:6])
 			endOfDestinationKey := 6 + sizeDestinationHostkey
@@ -155,11 +158,21 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 
 			pubKey := messageChannel.Message[endOfDestinationKey:]
 
-			// Compute Ephemeral Key
-			
 
-			log.Println("Identity: ", hashedIdentity)
-			log.Println("PubKey: ", pubKey)
+			// Compute Ephemeral Key
+			// First, generate identifier
+			destinationHostkeyString := fmt.Sprintf("%s", hashedIdentity)
+			identifier := strconv.Itoa(int(tunnelID)) + destinationHostkeyString
+			cryptoObject := myPeer.PeerObject.CryptoSessionMap[identifier]
+
+			sessionKey := services.ComputeEphemeralKey(cryptoObject.Group, pubKey, cryptoObject.PrivateKey)
+
+			if cryptoObject.SessionKey == nil {
+				cryptoObject.SessionKey = sessionKey
+				log.Println("Created session key.")
+			}
+
+			log.Println(cryptoObject)
 
 			break
 
