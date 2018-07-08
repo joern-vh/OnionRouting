@@ -102,15 +102,16 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 		// CONFIRM TUNNEL INSTRUCTION
 		case 570:
 			log.Println("CONFIRM TUNNEL INSTRUCTION")
-			tunnelID := binary.BigEndian.Uint32(messageChannel.Message[4:12])
-			data := messageChannel.Message[4:]
+			tunnelID := binary.BigEndian.Uint32(messageChannel.Message[4:8])
+			data := messageChannel.Message[8:]
 			log.Println("TunnelID: ", tunnelID)
 			log.Println("Data: ", data)
 
 			command := binary.BigEndian.Uint16(data[0:2])
 			switch command {
 			case 568:
-				log.Println("Got a confirmation for a ")
+				log.Println("Got a confirmation for a tunnel construction")
+				handleConfirmTunnelInnstructionConstruction(tunnelID, data[2:], myPeer)
 				break
 			}
 			break
@@ -190,7 +191,7 @@ func handleOnionTunnelDestroy(messageChannel services.TCPMessageChannel) {
 func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *services.Peer) (*models.UDPConnection, error) {
 	var networkVersionString string
 	//var destinationAddress string
-	//var destinationHostkey []byte
+	var destinationHostkey []byte
 
 	networkVersion := binary.BigEndian.Uint16(messageChannel.Message[4:6])
 	onionPort := binary.BigEndian.Uint16(messageChannel.Message[6:8])
@@ -200,11 +201,11 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *se
 	if networkVersion == 0 {
 		networkVersionString = "IPv4"
 		//destinationAddress = net.IP(messageChannel.Message[14:18]).String()
-		//destinationHostkey = messageChannel.Message[18:]
+		destinationHostkey = messageChannel.Message[18:]
 	} else if networkVersion == 1 {
 		networkVersionString = "IPv6"
 		//destinationAddress = net.IP(messageChannel.Message[14:30]).String()
-		//destinationHostkey = messageChannel.Message[30:]
+		destinationHostkey = messageChannel.Message[30:]
 	}
 
 	// First, get ip address of sender
@@ -226,7 +227,7 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *se
 	}
 
 	// If everything worked out, send confirmTunnelConstruction back
-	confirmTunnelConstruction := models.ConfirmTunnelConstruction{TunnelID: tunnelID, Port: uint16(myPeer.PeerObject.UDPPort), DestinationHostkey: []byte("Key")}
+	confirmTunnelConstruction := models.ConfirmTunnelConstruction{TunnelID: tunnelID, Port: uint16(myPeer.PeerObject.UDPPort), DestinationHostkey: destinationHostkey}
 	message := services.CreateConfirmTunnelCronstructionMessage(confirmTunnelConstruction)
 
 	myPeer.PeerObject.TCPConnections[tunnelID].LeftWriter.TCPWriter.Write(message)
@@ -296,5 +297,20 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 
 		log.Printf("Onion Port: %d\n", onionPort)
 		log.Printf("Tunnel ID: %d\n", tunnelID)
+	}
+}
+
+func handleConfirmTunnelInnstructionConstruction(tunnelId uint32, destinationHostKey []byte, myPeer *services.Peer) {
+	// State now: just add hostkey
+	// Add hostkey to the list of available host, but first, convert it
+	newPublicKey, err := x509.ParsePKCS1PublicKey(destinationHostKey)
+	if err != nil {
+		log.Println("Couldn't convert []byte destinationHostKey to rsa Publickey")
+	}
+	myPeer.PeerObject.TCPConnections[tunnelId].ConnectionOrder.PushBack(services.GenerateIdentityOfKey(newPublicKey))
+
+	// Iterate through list and print its contents.
+	for e := myPeer.PeerObject.TCPConnections[tunnelId].ConnectionOrder.Front(); e != nil; e = e.Next() {
+		fmt.Println("List value ", e.Value)
 	}
 }
