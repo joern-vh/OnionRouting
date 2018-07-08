@@ -74,8 +74,24 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 				 switch command {
 				 // Construct tunnel
 				 case 567:
-					 ipAdd := net.IP(data[2:6]).String()
-					 destinationHostkey := data[6:]
+					 networkVersion := binary.BigEndian.Uint16(messageChannel.Message[4:6])
+					 var networkVersionString string
+					 var ipAdd string
+					 var destinationHostkey []byte
+
+					 fmt.Println("SIZE OF ONION TUNNEL BUILD: ", len(messageChannel.Message))
+
+					 if networkVersion == 0 {
+						 networkVersionString = "IPv4"
+						 ipAdd = net.IP(data[2:6]).String()
+						 destinationHostkey = messageChannel.Message[12:]
+					 } else if networkVersion == 1 {
+						 networkVersionString = "IPv6"
+						 ipAdd = net.IP(messageChannel.Message[8:24]).String()
+						 destinationHostkey = messageChannel.Message[24:]
+					 }
+
+
 					 //tcpPort :=
 					 // now, create new TCP RightWriter for the right side
 					 newTCPWriter, err := myPeer.CreateTCPWriter(ipAdd, 4200)
@@ -83,7 +99,7 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 						 return errors.New("Error creating tcp writer, error: " + err.Error())
 					 }
 					 myPeer.PeerObject.TCPConnections[tunnelID].RightWriter = newTCPWriter
-					 constructMessage := models.ConstructTunnel{NetworkVersion: "IPv4", DestinationHostkey: destinationHostkey, DestinationAddress: ipAdd, OnionPort: uint16(myPeer.PeerObject.UDPPort), TCPPort:uint16(myPeer.PeerObject.P2P_Port), TunnelID: tunnelID}
+					 constructMessage := models.ConstructTunnel{NetworkVersion: networkVersionString, DestinationHostkey: destinationHostkey, DestinationAddress: ipAdd, OnionPort: uint16(myPeer.PeerObject.UDPPort), TCPPort:uint16(myPeer.PeerObject.P2P_Port), TunnelID: tunnelID}
 					 message := services.CreateConstructTunnelMessage(constructMessage)
 
 					 myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write(message)
