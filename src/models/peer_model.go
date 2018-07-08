@@ -19,6 +19,7 @@ type Peer struct {
 	PublicKey		*rsa.PublicKey 					`json:"public_key"`
 	UDPConnections	map[uint32]*UDPConnection 		`json:"udp_connections"`
 	TCPConnections	map[uint32]*TCPConnection 		`json:"tcp_writers"`
+	CryptoSessionMap		map[string]*CryptoObject 		`json:"crypto_session_map"`
 }
 
 // Identify by id in hashmap
@@ -38,8 +39,8 @@ type TCPWriter struct {
 
 type CryptoObject struct {
 	TunnelId		uint32 							`json:"tunnel_id"`
-	PrivateKey		[]byte 							`json:"tunnel_id"`
+	PrivateKey		*dhkx.DHKey 						`json:"tunnel_id"`
 	PublicKey		[]byte 							`json:"tunnel_id"`
 	SessionKey		[]byte 							`json:"tunnel_id"`
-	Group			dhkx.DHGroup 					`json:"tunnel_id"`
+	Group			*dhkx.DHGroup 					`json:"tunnel_id"`
 }

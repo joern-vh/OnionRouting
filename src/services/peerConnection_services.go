@@ -37,18 +37,18 @@ func CreateNewPeer(config *models.Config) (*Peer, error) {
 	newTCPListener, err := createTCPListener(config.P2P_Port)
 	if err != nil {
 		log.Println("CreatePeer: Problem creating TCP listener, error: ", err)
-		return &Peer{&models.Peer{nil , nil, 0, 0, "", nil, nil, nil, nil}}, err
+		return &Peer{&models.Peer{nil , nil, 0, 0, "", nil, nil, nil, nil, nil}}, err
 	}
 
 	// Create new UDPConn to listen for udp messages
 	newUDPListener, UDPPort, err := createUDPListener()
 	if err != nil {
 		log.Println("CreatePeer: Problem creating UDP listener, error: ", err)
-		return &Peer{&models.Peer{nil , nil, 0, 0, "", nil, nil, nil,  nil}}, err
+		return &Peer{&models.Peer{nil , nil, 0, 0, "", nil, nil, nil,  nil, nil}}, err
 	}
 
 	// Create new peer
-	newPeer := &Peer{&models.Peer{newTCPListener, newUDPListener,  UDPPort,config.P2P_Port, config.P2P_Hostname, config.PrivateKey, config.PublicKey, make(map[uint32] *models.UDPConnection), make(map[uint32] *models.TCPConnection)}}
+	newPeer := &Peer{&models.Peer{newTCPListener, newUDPListener,  UDPPort,config.P2P_Port, config.P2P_Hostname, config.PrivateKey, config.PublicKey, make(map[uint32] *models.UDPConnection), make(map[uint32] *models.TCPConnection),  make(map[string] *models.CryptoObject)}}
 
 	return newPeer, nil
 }
@@ -199,8 +199,8 @@ func (peer *Peer) CreateTCPWriter (destinationIP string, tcpPort int ) (*models.
 }
 
 // Creates a new TCPConnection for the peer with the left writer already set
-func (peer *Peer) CreateInitialTCPConnection(tunnelId uint32, leftWriter *models.TCPWriter) {
-	peer.PeerObject.TCPConnections[tunnelId] = &models.TCPConnection{tunnelId, leftWriter, nil, nil}
+func (peer *Peer) CreateInitialTCPConnection(tunnelId uint32, finalDestinationHostkey []byte, leftWriter *models.TCPWriter) {
+	peer.PeerObject.TCPConnections[tunnelId] = &models.TCPConnection{tunnelId, leftWriter, nil, nil, finalDestinationHostkey}
 }
 
 // SendMessage gets address, port and message(type byte) to send it to one peer
