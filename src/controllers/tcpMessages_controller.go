@@ -250,12 +250,18 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 		binary.Write(messageTypeBuf, binary.BigEndian, uint16(567))
 		data := messageTypeBuf.Bytes()
 		log.Println("JAAAAAA")
-		// Get ip and update connection state in the list
-		//ip := net.IP(data[2:6]).String()
 
+		log.Println(myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder)
+		ip := net.IP(data[2:6]).String()
+		log.Println(ip)
+		// geht the element wit the right ip and set its value to confirm: true
+		for i := range myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder {
+			if myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder[i].IpAddress == ip {
+				myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder[i].Confirmed = true
+			}
+		}
 
-
-
+		log.Println(myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder)
 
 		ipAddr := net.ParseIP("192.168.0.10")
 		data = append(data, ipAddr.To4()...)
