@@ -136,6 +136,34 @@ func CreateOnionTunnelDestroy(onionTunnelDestroy models.OnionTunnelDestroy) ([]b
 	return message
 }
 
+func CreateOnionTunnelData(onionTunnelData models.OnionTunnelData) ([]byte){
+	// Message Type
+	messageType := uint16(564)
+
+	// Convert messageType to Byte array
+	messageTypeBuf := new(bytes.Buffer)
+	binary.Write(messageTypeBuf, binary.BigEndian, messageType)
+	message := messageTypeBuf.Bytes()
+
+	// Convert tunnelID to Byte Array
+	tunnelIDBuf := new(bytes.Buffer)
+	binary.Write(tunnelIDBuf, binary.BigEndian, onionTunnelData.TunnelID)
+	message = append(message, tunnelIDBuf.Bytes()...)
+
+	// Append Data
+	message = append(message, onionTunnelData.Data...)
+
+	// Append Delimiter
+	message = append(message, []byte("\r\n")...)
+
+	// Prepend size of message
+	sizeBuf := new(bytes.Buffer)
+	binary.Write(sizeBuf, binary.BigEndian, uint16(len(message)+2))
+	message = append(sizeBuf.Bytes(), message...)
+
+	return message
+}
+
 func CreateOnionTunnelError(onionError models.OnionError) ([]byte) {
 	// Message Type
 	messageType := uint16(565)

@@ -172,14 +172,13 @@ func (peer *Peer) StartUDPListening() {
 		log.Println("StartUDPListening: Started listening")
 		buf := make([]byte, 1024)
 		for {
-			n,addr,err := peer.PeerObject.UDPListener.ReadFromUDP(buf)
+			n,_,err := peer.PeerObject.UDPListener.ReadFromUDP(buf)
 			if err != nil {
 				if err != nil {
 					log.Println("StartUDPListening: error " + err.Error())
 				}
 				CommunicationChannelUDPErrors <- err
 			}
-			log.Println("StartUDPListening: Message Received ", string(buf[0:n]), " from ",addr)
 
 			CommunicationChannelUDPMessages <- buf[0:n]
 

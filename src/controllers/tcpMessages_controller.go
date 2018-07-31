@@ -203,17 +203,18 @@ func handleOnionTunnelDestroy(messageChannel services.TCPMessageChannel) {
 
 
 func handleOnionTunnelData(messageChannel services.TCPMessageChannel, myPeer *services.Peer) {
+	log.Println("Messagetype: Onion Tunnel Data")
 	tunnelID := binary.BigEndian.Uint32(messageChannel.Message[4:8])
-	data := messageChannel.Message[8:]
+	//data := messageChannel.Message[8:]
 
-	log.Printf("Tunnel ID: %s\n", tunnelID)
-	log.Printf("Tunnel ID: %x\n", data)
+	log.Printf("Tunnel ID: %d\n", tunnelID)
+
+	myPeer.PeerObject.UDPConnections[tunnelID].RightWriter.Write(messageChannel.Message)
 }
 
 
 func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *services.Peer) (*models.UDPConnection, error) {
 	log.Print("Messagetype: Handle Construct Tunnel")
-	var networkVersionString string
 	//var destinationAddress string
 	var destinationHostkey []byte
 
@@ -223,11 +224,9 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *se
 	tunnelID := binary.BigEndian.Uint32(messageChannel.Message[10:14])
 
 	if networkVersion == 0 {
-		networkVersionString = "IPv4"
 		//destinationAddress = net.IP(messageChannel.Message[14:18]).String()
 		destinationHostkey = messageChannel.Message[18:]
 	} else if networkVersion == 1 {
-		networkVersionString = "IPv6"
 		//destinationAddress = net.IP(messageChannel.Message[14:30]).String()
 		destinationHostkey = messageChannel.Message[30:]
 	}
@@ -245,7 +244,7 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *se
 	myPeer.CreateInitialTCPConnection(tunnelID, destinationHostkey ,newTCPWriter)
 
 	//  Now, create new UDP Connection with this "sender" as left side
-	newUDPConnection, err := services.CreateInitialUDPConnection(ipAdd, int(onionPort), tunnelID, networkVersionString)
+	newUDPConnection, err := services.CreateInitialUDPConnectionLeft(ipAdd, int(onionPort), tunnelID)
 	if err != nil {
 		return nil, errors.New("handleConstructTunnel: " + err.Error())
 	}
@@ -268,13 +267,20 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *se
 func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, myPeer *services.Peer) {
 	log.Println("Messagetype: Confirm Tunnel construction")
 
-	//onionPort := binary.BigEndian.Uint16(messageChannel.Message[4:6])
+	onionPort := binary.BigEndian.Uint16(messageChannel.Message[4:6])
 	tunnelID := binary.BigEndian.Uint32(messageChannel.Message[6:10])
 	destinationHostkey := messageChannel.Message[10:]
 
 	log.Println("Sender: " + myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.DestinationIP + ", Port: " + strconv.Itoa(myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.DestinationPort))
 
 	if myPeer.PeerObject.TCPConnections[tunnelID].LeftWriter != nil {
+		// Now, create a udp righter to the right side (where we forwarded our tunnel construction to
+		newRightUDPWriter, err := services.CreateUDPWriter(services.GetIPOutOfAddr(messageChannel.Host), int(onionPort))
+		if err != nil {
+			log.Println("Error creating UDP Writer right >> " +  err.Error())
+		}
+		myPeer.PeerObject.UDPConnections[tunnelID].RightWriter = newRightUDPWriter
+
 		// Forward to left a confirmTunnelInstruction
 		dataMessage := models.DataConfirmTunnelConstruction{DestinationHostkey: destinationHostkey}
 		data := services.CreateDataConfirmTunnelConstruction(dataMessage)
@@ -355,7 +361,12 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 
 		myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write(keyExchangeMessage)
 
-
+		// Now, create the UDP Writer Right for the UDP to the next right hop and assign it
+		newUDPConnection, err := services.CreateInitialUDPConnectionRight(services.GetIPOutOfAddr(messageChannel.Host), int(onionPort), tunnelID)
+		if err != nil {
+			log.Println("handleConfirmTunnelConstruction while creating udp connection: " + err.Error())
+		}
+		myPeer.AppendNewUDPConnection(newUDPConnection)
 		// OLD TESTING
 
 		log.Println("TESTING: SEND TUNNEL INSTRUCTION")
@@ -449,7 +460,7 @@ func handleExchangeKey(messageChannel services.TCPMessageChannel, data []byte, m
 
 		// ToDo: Change state of Connection to established.
 		log.Println("Test")
-		dataMessage := models.DataConstructTunnel{NetworkVersion: "IPv4", DestinationAddress: "192.168.0.15", Port: 4500, DestinationHostkey: destinationHostkey}
+		dataMessage := models.DataConstructTunnel{NetworkVersion: "IPv4", DestinationAddress: "192.168.0.10", Port: 4500, DestinationHostkey: destinationHostkey}
 		data := services.CreateDataConstructTunnel(dataMessage)
 
 		// Now, just for tests, send a forward to a new peer

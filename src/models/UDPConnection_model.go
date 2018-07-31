@@ -4,7 +4,6 @@ import "net"
 
 type UDPConnection struct {
 	TunnelId			uint32				`json:"tunnelId"`
-	NetworkVersion		string				`json:"networkVersion"`
 	LeftHost			string 				`json:"left_host"`
 	LeftPort			int 				`json:"left_port"`
 	RightHost			string 				`json:"right_host"`

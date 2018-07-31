@@ -13,19 +13,29 @@ type UDPConnection struct {
 	UCPConnObject *models.UDPConnection
 }
 
-// When Creating Initial, always set writer for left side >> Write back to origin
-func CreateInitialUDPConnection(leftHost string, leftPort int, tunndelId uint32, networkVersion string) (*models.UDPConnection, error) {
+// When Creating Initial (despite first element in tunnel), always set writer for left side >> Write back to origin
+func CreateInitialUDPConnectionLeft(leftHost string, leftPort int, tunndelId uint32) (*models.UDPConnection, error) {
 	// first, create leftWriter
-	leftWriter, err := createUDPWriter(leftHost, leftPort)
+	leftWriter, err := CreateUDPWriter(leftHost, leftPort)
 	if err != nil {
 		return nil, errors.New("CreateInitialUDPConnection: Problem creating new UDPWriter, " + err.Error())
 	}
 
-	return &models.UDPConnection{tunndelId, networkVersion, leftHost, leftPort, "", 0, leftWriter, nil}, nil
+	return &models.UDPConnection{tunndelId, leftHost, leftPort, "", 0, leftWriter, nil}, nil
+}
+
+func CreateInitialUDPConnectionRight(rightHost string, rightPort int, tunndelId uint32) (*models.UDPConnection, error) {
+	// first, create rightWriter
+	rightWriter, err := CreateUDPWriter(rightHost, rightPort)
+	if err != nil {
+		return nil, errors.New("CreateInitialUDPConnection: Problem creating new UDPWriter, " + err.Error())
+	}
+
+	return &models.UDPConnection{tunndelId, rightHost, rightPort, "", 0, nil, rightWriter}, nil
 }
 
 // Creates a new writer for a given ip and port
-func createUDPWriter(destinationAddress string, destinationPort int) (net.Conn, error){
+func CreateUDPWriter(destinationAddress string, destinationPort int) (net.Conn, error){
 	newConn, err := net.Dial("udp", destinationAddress + ":" + strconv.Itoa(destinationPort))
 	if err != nil {
 		return nil, errors.New("createUDPWriter: Error while creating new wirter, error: " + err.Error())
