@@ -9,6 +9,7 @@ peerTest.go
 testkey.pem
 cryptoTest.go
 keypair.pem
+testkey2.pem
 
 config.ini
 config2.ini
