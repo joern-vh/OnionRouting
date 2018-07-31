@@ -31,7 +31,7 @@ func createUDPWriter(destinationAddress string, destinationPort int) (net.Conn, 
 		return nil, errors.New("createUDPWriter: Error while creating new wirter, error: " + err.Error())
 	}
 
-	log.Println("createUDPWriter: Created new writer for " + destinationAddress)
+	log.Println("createUDPWriter: Created new writer to " + destinationAddress + ", Port: " + strconv.Itoa(destinationPort))
 
 	return newConn, nil
 }
