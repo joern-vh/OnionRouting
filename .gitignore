@@ -8,3 +8,4 @@ golang.org
 peerTest.go
 testkey.pem
 cryptoTest.go
+keypair.pem

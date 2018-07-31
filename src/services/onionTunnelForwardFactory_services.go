@@ -60,3 +60,19 @@ func CreateDataConfirmTunnelConstruction(dataConfirmTunnelConstruction models.Da
 
 	return message
 }
+
+func CreateDataExchangeKey(exchangeKeyMessage []byte) ([]byte) {
+	// Message Type
+	command := uint16(571)
+
+	// Convert command to Byte array
+	messageTypeBuf := new(bytes.Buffer)
+	binary.Write(messageTypeBuf, binary.BigEndian, command)
+	message := messageTypeBuf.Bytes()
+
+	// Append destinationHostkey to Message Array
+	message = append(message, exchangeKeyMessage...)
+
+	return message
+
+}
