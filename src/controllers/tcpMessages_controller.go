@@ -115,7 +115,7 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 
 
 				case 571:
-				 		handleExchangeKey(messageChannel, myPeer)
+				 		handleExchangeKey(messageChannel, data[2:], myPeer)
 						 break
 				 default:
 					 return errors.New("tcpMessagesController: Message Type not Found")
@@ -142,7 +142,7 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 
 		// EXCHANGE KEY
 		case 571:
-			handleExchangeKey(messageChannel, myPeer)
+			handleExchangeKey(messageChannel, nil, myPeer)
 			break
 
 		default:
@@ -415,8 +415,12 @@ func handleConfirmTunnelInnstructionConstruction(tunnelId uint32, destinationHos
 	}
 }
 
-func handleExchangeKey(messageChannel services.TCPMessageChannel, myPeer *services.Peer) {
+func handleExchangeKey(messageChannel services.TCPMessageChannel, data []byte, myPeer *services.Peer) {
 	log.Println("EXCHANGE KEY")
+
+	if data != nil {
+		messageChannel.Message = data
+	}
 
 	tunnelID := binary.BigEndian.Uint32(messageChannel.Message[4:8])
 
@@ -444,6 +448,15 @@ func handleExchangeKey(messageChannel services.TCPMessageChannel, myPeer *servic
 		identifier = strconv.Itoa(int(tunnelID)) + destinationHostkeyString
 
 		// ToDo: Change state of Connection to established.
+		log.Println("Test")
+		dataMessage := models.DataConstructTunnel{NetworkVersion: "IPv4", DestinationAddress: "192.168.0.15", Port: 4500, DestinationHostkey: destinationHostkey}
+		data := services.CreateDataConstructTunnel(dataMessage)
+
+		// Now, just for tests, send a forward to a new peer
+		tunnelInstructionMessage := models.TunnelInstruction{TunnelID: tunnelID, Data: data}
+		message := services.CreateTunnelInstruction(tunnelInstructionMessage)
+
+		myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write(message)
 	} else {
 		identifier = strconv.Itoa(int(tunnelID))
 	}
@@ -477,13 +490,4 @@ func handleExchangeKey(messageChannel services.TCPMessageChannel, myPeer *servic
 
 		myPeer.PeerObject.TCPConnections[tunnelID].LeftWriter.TCPWriter.Write(instructionMessage)
 	}
-
-	/*dataMessage := models.DataConstructTunnel{NetworkVersion: "IPv4", DestinationAddress: "192.168.0.15", Port: 4200, DestinationHostkey: destinationHostkey}
-	data := services.CreateDataConstructTunnel(dataMessage)
-
-	// Now, just for tests, send a forward to a new peer
-	tunnelInstructionMessage := models.TunnelInstruction{TunnelID: tunnelID, Data: data}
-	message := services.CreateTunnelInstruction(tunnelInstructionMessage)
-
-	myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write(message)*/
 }
