@@ -14,3 +14,5 @@ testkey2.pem
 config.ini
 config2.ini
 config3.ini
+
+peerTestUDP.go
