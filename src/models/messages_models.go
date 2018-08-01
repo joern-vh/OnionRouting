@@ -43,12 +43,15 @@ type ConstructTunnel struct {
 	TunnelID				uint32
 	DestinationAddress 		string
 	DestinationHostkey 		[]byte
+	OriginHostkey			[]byte
+	PublicKey				[]byte
 }
 
 type ConfirmTunnelConstruction struct {
 	Port					uint16
 	TunnelID 				uint32
 	DestinationHostkey 		[]byte
+	PublicKey				[]byte
 }
 
 type TunnelInstruction struct {

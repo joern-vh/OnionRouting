@@ -43,20 +43,26 @@ func GeneratePreMasterKey() (*dhkx.DHKey, []byte, *dhkx.DHGroup) {
 }
 
 // Compute an ephemeral key using DH algorithm
-func ComputeEphemeralKey(g *dhkx.DHGroup, receivedPublicKey []byte, priv *dhkx.DHKey, privateKey *rsa.PrivateKey) ([]byte){
+func ComputeEphemeralKey(g *dhkx.DHGroup, receivedPublicKey []byte, priv *dhkx.DHKey) ([]byte){
 	log.Println("COMPUTE EPHEMERAL KEY:")
 
-	pubkey, _ := DecryptKeyExchange(privateKey, receivedPublicKey)
+	//pubkey, _ := DecryptKeyExchange(privateKey, receivedPublicKey)
 
-	recvPubKey := dhkx.NewPublicKey(pubkey)
+	recvPubKey := dhkx.NewPublicKey(receivedPublicKey)
 
 	// Compute the key
-	k, _ := g.ComputeKey(recvPubKey, priv)
+	k, err := g.ComputeKey(recvPubKey, priv)
+
+	if err != nil {
+		log.Fatal("Compute Ephemeral Key: ", err.Error())
+	}
 
 	// Get the key in the form of []byte
 	key := k.Bytes()
 
 	keyHash := sha256.Sum256(key)
+
+	log.Println("EPHEMERAL KEY: ", keyHash)
 
 	return keyHash[:]
 }

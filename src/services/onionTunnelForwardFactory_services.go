@@ -40,8 +40,16 @@ func CreateDataConstructTunnel(dataConstructTunnel models.DataConstructTunnel) (
 	binary.Write(portBuf, binary.BigEndian, dataConstructTunnel.Port)
 	message = append(message, portBuf.Bytes()...)
 
+	// Append size of Destination Hostkey
+	destinationHostkeyLengthBuf := new(bytes.Buffer)
+	binary.Write(destinationHostkeyLengthBuf, binary.BigEndian, uint16(len(dataConstructTunnel.DestinationHostkey)))
+	message = append(message, destinationHostkeyLengthBuf.Bytes()...)
+
 	// Append destinationHostkey to Message Array
 	message = append(message, dataConstructTunnel.DestinationHostkey...)
+
+	// Append Public Key
+	message = append(message, dataConstructTunnel.PublicKey...)
 
 	return message
 }
@@ -55,13 +63,21 @@ func CreateDataConfirmTunnelConstruction(dataConfirmTunnelConstruction models.Da
 	binary.Write(messageTypeBuf, binary.BigEndian, command)
 	message := messageTypeBuf.Bytes()
 
+	// Append size of Destination Hostkey
+	destinationHostkeyLengthBuf := new(bytes.Buffer)
+	binary.Write(destinationHostkeyLengthBuf, binary.BigEndian, uint16(len(dataConfirmTunnelConstruction.DestinationHostkey)))
+	message = append(message, destinationHostkeyLengthBuf.Bytes()...)
+
 	// Append destinationHostkey to Message Array
 	message = append(message, dataConfirmTunnelConstruction.DestinationHostkey...)
+
+	// Append Public Key
+	message = append(message, dataConfirmTunnelConstruction.PublicKey...)
 
 	return message
 }
 
-func CreateDataExchangeKey(exchangeKeyMessage []byte) ([]byte) {
+func CreateDataExchangeKey(exchangeKey models.ExchangeKey) ([]byte) {
 	// Message Type
 	command := uint16(571)
 
@@ -70,9 +86,21 @@ func CreateDataExchangeKey(exchangeKeyMessage []byte) ([]byte) {
 	binary.Write(messageTypeBuf, binary.BigEndian, command)
 	message := messageTypeBuf.Bytes()
 
-	// Append destinationHostkey to Message Array
-	message = append(message, exchangeKeyMessage...)
+	// Convert tunnelID to Byte Array
+	tunnelIDBuf := new(bytes.Buffer)
+	binary.Write(tunnelIDBuf, binary.BigEndian, exchangeKey.TunnelID)
+	message = append(message, tunnelIDBuf.Bytes()...)
+
+	// Append size of Destination Hostkey
+	destinationHostkeyLengthBuf := new(bytes.Buffer)
+	binary.Write(destinationHostkeyLengthBuf, binary.BigEndian, uint16(len(exchangeKey.DestinationHostkey)))
+	message = append(message, destinationHostkeyLengthBuf.Bytes()...)
+
+	// Append Destination Hostkey
+	message = append(message, exchangeKey.DestinationHostkey...)
+
+	// Append Public Key
+	message = append(message, exchangeKey.PublicKey...)
 
 	return message
-
 }

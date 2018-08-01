@@ -55,8 +55,24 @@ func CreateConstructTunnelMessage(constructTunnel models.ConstructTunnel) ([]byt
 	// Convert destinationAddress to Byte Array
 	message = append(message, ip...)
 
+	// Append size of destination hostkey
+	destinationHostkeyLengthBuf := new(bytes.Buffer)
+	binary.Write(destinationHostkeyLengthBuf, binary.BigEndian, uint16(len(constructTunnel.DestinationHostkey)))
+	message = append(message, destinationHostkeyLengthBuf.Bytes()...)
+
 	// Append destinationHostkey to Message Array
 	message = append(message, constructTunnel.DestinationHostkey...)
+
+	// Append size of origin hostkey
+	originHostkeyLengthBuf := new(bytes.Buffer)
+	binary.Write(originHostkeyLengthBuf, binary.BigEndian, uint16(len(constructTunnel.OriginHostkey)))
+	message = append(message, originHostkeyLengthBuf.Bytes()...)
+
+	// Append originHostkey to Message Array
+	message = append(message, constructTunnel.OriginHostkey...)
+
+	// Append public key to Message Array
+	message = append(message, constructTunnel.PublicKey...)
 
 
 	// Append Delimiter
@@ -89,8 +105,16 @@ func CreateConfirmTunnelCronstructionMessage(confirmTunnelConstruction models.Co
 	binary.Write(tunnelIDBuf, binary.BigEndian, confirmTunnelConstruction.TunnelID)
 	message = append(message, tunnelIDBuf.Bytes()...)
 
-	// Append destinationHostkey to Message Array
+	// Append size of hostkey
+	destinationHostkeyLengthBuf := new(bytes.Buffer)
+	binary.Write(destinationHostkeyLengthBuf, binary.BigEndian, uint16(len(confirmTunnelConstruction.DestinationHostkey)))
+	message = append(message, destinationHostkeyLengthBuf.Bytes()...)
+
+	// Append hostkey of oneself to Message Array
 	message = append(message, confirmTunnelConstruction.DestinationHostkey...)
+
+	// Append PublicKey to Message Array
+	message = append(message, confirmTunnelConstruction.PublicKey...)
 
 	// Append Delimiter
 	message = append(message, []byte("\r\n")...)
