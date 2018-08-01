@@ -288,7 +288,6 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 
 		myPeer.PeerObject.TCPConnections[tunnelID].LeftWriter.TCPWriter.Write(message)
 	} else {
-		// TODO: I THINK ONLY HERE FORWARDING TO CHANNEL
 		log.Println("Final Destination > PEER 0")
 		log.Println(myPeer.PeerObject.TCPConnections[tunnelID].FinalDestination)
 
@@ -316,7 +315,8 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 		}
 		myPeer.AppendNewUDPConnection(newUDPConnection)
 
-
+		// TODO: I THINK ONLY HERE FORWARDING TO CHANNEL
+		services.CommunicationChannelTCPConfirm <- services.ConfirmMessageChannel{TunnelId:tunnelID}
 
 
 

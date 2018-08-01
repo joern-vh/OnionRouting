@@ -134,20 +134,24 @@ func initiateTunnelConstruction(tunnelId uint32, mypeer *services.Peer, minAmoun
 	// TODO: Write function to keep track of confirmations >>> build evntloop
 	log.Println("Start listening for Confirm messages")
 	go func() {
-		for msg := range services.CommunicationChannelTCPConfirm {
+		for msg := range services.CommunicationChannelTCPConfirm {	// TODO: Check for tunnelID!
 			log.Println("\n\n")
-			log.Println("ConfirmListener: New message from " + msg.Host)
+			log.Println("ConfirmListener: New confirm for tunnel " + strconv.Itoa(int(msg.TunnelId)))
 
-			// now, check if the length of TunnelHostOrder[tunnelId] < minAmountHups >> if so, start a new tunnel construction
-			if mypeer.PeerObject.TunnelHostOrder[tunnelId].Len() < minAmountHups {
+			// first, check if the tunnelID matchs to the id which initialized the function
+			if msg.TunnelId == tunnelId{
+				// now, check if the length of TunnelHostOrder[tunnelId] < minAmountHups >> if so, start a new tunnel construction
+				if mypeer.PeerObject.TunnelHostOrder[tunnelId].Len() < minAmountHups {
 
-			} else {
-				log.Println("We've enough hops!!!!")
-				for e := mypeer.PeerObject.TunnelHostOrder[tunnelId].Front(); e != nil; e = e.Next() {
-					fmt.Println(e.Value) // print out the elements
+				} else {
+					log.Println("We've enough hops!!!!")
+					for e := mypeer.PeerObject.TunnelHostOrder[tunnelId].Front(); e != nil; e = e.Next() {
+						fmt.Println(e.Value) // print out the elements
+					}
+					// TODO: connect to final and if else to check if final yes or no
 				}
-				// TODO: connect to final and if else to check if final yes or no
 			}
+			// no else needed, another instance of the function handles that
 		}
 	}()
 }
