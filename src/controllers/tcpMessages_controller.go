@@ -9,10 +9,10 @@ import (
 
 	"models"
 	"fmt"
-	"container/list"
 	"crypto/x509"
-	"bytes"
 	"strconv"
+	"container/list"
+	"bytes"
 )
 
 func StartTCPController(myPeer *services.Peer) {
@@ -179,19 +179,20 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *s
 	constructTunnelMessage := models.ConstructTunnel{NetworkVersion: networkVersionString, DestinationHostkey: destinationHostkey, TunnelID: newTunnelID, DestinationAddress: destinationAddress, OnionPort: uint16(myPeer.PeerObject.UDPPort), TCPPort: uint16(myPeer.PeerObject.P2P_Port)}
 	message := services.CreateConstructTunnelMessage(constructTunnelMessage)
 
-	newTCPWriter, err := myPeer.CreateTCPWriter(destinationAddress, int(onionPort))		// TODO: Make dynamic
+	newTCPWriter, err := myPeer.CreateTCPWriter(destinationAddress, int(onionPort))
 	if err != nil {
 		log.Println("Error creating tcp writer, error: " + err.Error())
 	}
 
-	// Generate hash of the final destination hoskey
-	newPublicKey, err := x509.ParsePKCS1PublicKey(destinationHostkey)
-	if err != nil {
-		log.Println("Couldn't convert []byte destinationHostKey to rsa Publickey, ", err.Error())
-	}
-	myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID] = &models.TCPConnection{constructTunnelMessage.TunnelID, nil, newTCPWriter, list.New(), services.GenerateIdentityOfKey(newPublicKey)}
-	// Now just add the right connection to the map with status pending
-	//myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID].ConnectionOrder = append(myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID].ConnectionOrder, models.ConnnectionOrderObject{TunnelId:constructTunnelMessage.TunnelID, IpAddress:destinationAddress, IpPort:4200, Confirmed:false})
+	// Initialize list for TunnelHostOrder with new TunnelID as Key for the Hashmap
+	myPeer.PeerObject.TunnelHostOrder[newTunnelID] = new(list.List)
+	// then, generate the hashed version of the destinationHostKey and add it as first value to the list
+	myPeer.PeerObject.TunnelHostOrder[newTunnelID].PushBack(services.GenerateIdentityOfKey(myPeer.PeerObject.PublicKey))
+
+	// now, add the new TCP Connection to the peer under TCPConnections, indentified by the newTunnelid
+	myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID] = &models.TCPConnection{constructTunnelMessage.TunnelID, nil, newTCPWriter, &models.OnionTunnelBuild{DestinationHostkey: destinationHostkey, Port: onionPort, DestinationAddress: destinationAddress, NetworkVersion: networkVersionString}}
+
+	// at last, send the constructTunnelMessage
 	myPeer.PeerObject.TCPConnections[constructTunnelMessage.TunnelID].RightWriter.TCPWriter.Write(message)
 }
 
@@ -286,21 +287,25 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 		data := services.CreateDataConfirmTunnelConstruction(dataMessage)
 		confirmTunnelInstruction := models.ConfirmTunnelInstruction{TunnelID: tunnelID, Data: data}
 		message := services.CreateConfirmTunnelInstruction(confirmTunnelInstruction)
+		log.Println("Final Destination exists??????")
+		log.Println(myPeer.PeerObject.TCPConnections[tunnelID])
 
 		myPeer.PeerObject.TCPConnections[tunnelID].LeftWriter.TCPWriter.Write(message)
 	} else {
-		// Add hostkey to the list of available host, but first, convert it
+		log.Println("Final Destination > PEER 0")
+		log.Println(myPeer.PeerObject.TCPConnections[tunnelID].FinalDestination)
+
+		// we reached peer 0 > create hashed hostkey of confirmation sender and add it to tunnelHostOrder
 		newPublicKey, err := x509.ParsePKCS1PublicKey(destinationHostkey)
-		hashedVersion := services.GenerateIdentityOfKey(newPublicKey)
 		if err != nil {
 			log.Println("Couldn't convert []byte destinationHostKey to rsa Publickey, ", err.Error())
 		}
-		myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder.PushFront(hashedVersion)
+		hashedVersion := services.GenerateIdentityOfKey(newPublicKey)
+		myPeer.PeerObject.TunnelHostOrder[tunnelID].PushBack(hashedVersion)
 
-		// Iterate through list and print its contents.
-		/*for e := myPeer.PeerObject.TCPConnections[tunnelID].ConnectionOrder.Front(); e != nil; e = e.Next() {
-			fmt.Println("List value ", e.Value)
-		}*/
+
+
+
 
 		// Now, create a cryptoobject and add it to the hashmap of the tcpConnection
 		// First, generate identifier
@@ -311,16 +316,7 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 		privateKey, publicKey, group := services.GeneratePreMasterKey()
 		myPeer.PeerObject.CryptoSessionMap[newIdentifier] = &models.CryptoObject{TunnelId:tunnelID, PublicKey:publicKey, PrivateKey:privateKey,SessionKey:nil, Group:group}
 
-		// We received a confirmation from out final destination, send ready message
-		if bytes.Equal(hashedVersion, myPeer.PeerObject.TCPConnections[tunnelID].FinalDestinationHostkey) {
-			log.Println("Yes, we'are connected to our final destination")
 
-			//onionTunnelReady := models.OnionTunnelReady{TunnelID: tunnelID, DestinationHostkey: myPeer.PeerObject.TCPConnections[tunnelID].FinalDestinationHostkey}
-			//onionTunnelReadyMessage := services.CreateOnionTunnelReady(onionTunnelReady)
-
-			// TODO: Send OnionTunnelReady to CM/UI module.
-			//log.Println(onionTunnelReadyMessage)
-		}
 
 		// Convert messageType to Byte array
 		/*messageTypeBuf := new(bytes.Buffer)
@@ -385,20 +381,18 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 func handleConfirmTunnelInnstructionConstruction(tunnelId uint32, destinationHostKey []byte, myPeer *services.Peer) {
 	log.Println("Messagetype: Confirm Tunnel Instruction Construction")
 	log.Println("Got a conformation for tunnel: " + strconv.Itoa(int(tunnelId)))
-	// State now: just add hostkey
-	// Add hostkey to the list of available host, but first, convert it
+
+	// Now, create hashed version of the destination hostkey and add it to the TunnelHostOrder
 	newPublicKey, err := x509.ParsePKCS1PublicKey(destinationHostKey)
 	if err != nil {
 		log.Println("Couldn't convert []byte destinationHostKey to rsa Publickey")
 	}
-	myPeer.PeerObject.TCPConnections[tunnelId].ConnectionOrder.PushBack(services.GenerateIdentityOfKey(newPublicKey))
-
-	// Iterate through list and print its contents.
-	/*for e := myPeer.PeerObject.TCPConnections[tunnelId].ConnectionOrder.Front(); e != nil; e = e.Next() {
-		fmt.Println("List value ", e.Value)
-	}*/
-
 	hashedVersion := services.GenerateIdentityOfKey(newPublicKey)
+	myPeer.PeerObject.TunnelHostOrder[tunnelId].PushBack(hashedVersion)
+
+
+
+
 
 	// Now, create a cryptoobject and add it to the hashmap of the tcpConnection
 	// First, generate identifier
@@ -414,15 +408,16 @@ func handleConfirmTunnelInnstructionConstruction(tunnelId uint32, destinationHos
 	log.Println("Map ",myPeer.PeerObject.CryptoSessionMap[identi])
 
 	log.Println("Hashed version: ", hashedVersion)*/
-	// We received a confirmation from out final destination, send ready message
-	if bytes.Equal(hashedVersion, myPeer.PeerObject.TCPConnections[tunnelId].FinalDestinationHostkey) {
+	// check, if we received the destinationhostkey of our final destination >> if so, send  the OnionTunnelReady to the CM/UI Module
+	log.Println("ReceivedDestinatioHostKey")
+	log.Println(destinationHostKey)
+	log.Println("Presaved one")
+	log.Println(myPeer.PeerObject.TCPConnections[tunnelId].FinalDestination.DestinationHostkey)
+	if bytes.Equal(destinationHostKey, myPeer.PeerObject.TCPConnections[tunnelId].FinalDestination.DestinationHostkey) {
 		log.Println("Yes, we've connected to our final destination")
-
-		//onionTunnelReady := models.OnionTunnelReady{TunnelID: tunnelId, DestinationHostkey: myPeer.PeerObject.TCPConnections[tunnelId].FinalDestinationHostkey}
-		//onionTunnelReadyMessage := services.CreateOnionTunnelReady(onionTunnelReady)
-
 		// TODO: Send OnionTunnelReady to CM/UI module.
-		//log.Println(onionTunnelReadyMessage)
+		// onionTunnelReady := models.OnionTunnelReady{TunnelID: tunnelId, DestinationHostkey: myPeer.PeerObject.TCPConnections[tunnelId].FinalDestinationHostkey}
+		// onionTunnelReadyMessage := services.CreateOnionTunnelReady(onionTunnelReady)
 	}
 }
 
