@@ -375,6 +375,10 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 		hashedVersion := services.GenerateIdentityOfKey(newPublicKey)
 		myPeer.PeerObject.TunnelHostOrder[tunnelID].PushBack(hashedVersion)
 
+		log.Println("Teeeessssstttttttt")
+		for e := myPeer.PeerObject.TunnelHostOrder[tunnelID].Front(); e != nil; e = e.Next() {
+			fmt.Println(e.Value) // print out the elements
+		}
 
 
 
@@ -401,16 +405,6 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 			// ToDo: ONION TUNNEL ERROR
 		}
 
-		// We received a confirmation from out final destination, send ready message
-		if bytes.Equal(hashedVersion, myPeer.PeerObject.TCPConnections[tunnelID].FinalDestination.DestinationHostkey) {
-			log.Println("Yes, we'are connected to our final destination")
-
-			//onionTunnelReady := models.OnionTunnelReady{TunnelID: tunnelID, DestinationHostkey: myPeer.PeerObject.TCPConnections[tunnelID].FinalDestinationHostkey}
-			//onionTunnelReadyMessage := services.CreateOnionTunnelReady(onionTunnelReady)
-
-			// TODO: Send OnionTunnelReady to CM/UI module.
-			//log.Println(onionTunnelReadyMessage)
-		}
 
 		// KEY EXCHANGE TESTING
 
@@ -434,7 +428,7 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 		myPeer.AppendNewUDPConnection(newUDPConnection)
 		// TESTING
 
-		_, pub, _ := services.ParseKeys("keypair.pem")
+		_, pub, _ := services.ParseKeys("testkey2.pem")
 
 		hashedVersion = services.GenerateIdentityOfKey(pub)
 
@@ -452,7 +446,7 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 		//encryptedPubKey, err := services.DecryptKeyExchange(myPeer.PeerObject.PrivateKey, pubKey)
 
 		log.Println("TESTING: SEND TUNNEL INSTRUCTION")
-		dataMessage := models.DataConstructTunnel{NetworkVersion: "IPv4", DestinationAddress: "192.168.0.15", Port: 4500, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub), PublicKey: publicKey}
+		dataMessage := models.DataConstructTunnel{NetworkVersion: "IPv4", DestinationAddress: "192.168.0.10", Port: 4500, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub), PublicKey: publicKey}
 		data := services.CreateDataConstructTunnel(dataMessage)
 
 		// Now, just for tests, send a forward to a new peer
@@ -508,6 +502,10 @@ func handleConfirmTunnelInnstructionConstruction(tunnelId uint32, data []byte, m
 
 		// TODO: Send OnionTunnelReady to CM/UI module.
 		//log.Println(onionTunnelReadyMessage)
+
+		for e := myPeer.PeerObject.TunnelHostOrder[tunnelId].Front(); e != nil; e = e.Next() {
+			fmt.Println(e.Value) // print out the elements
+		}
 	}
 }
 
