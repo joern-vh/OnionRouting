@@ -381,17 +381,6 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 			// ToDo: ONION TUNNEL ERROR
 		}
 
-		// We received a confirmation from out final destination, send ready message
-		if bytes.Equal(hashedVersion, myPeer.PeerObject.TCPConnections[tunnelID].FinalDestination.DestinationHostkey) {
-			log.Println("Yes, we'are connected to our final destination")
-
-			//onionTunnelReady := models.OnionTunnelReady{TunnelID: tunnelID, DestinationHostkey: myPeer.PeerObject.TCPConnections[tunnelID].FinalDestinationHostkey}
-			//onionTunnelReadyMessage := services.CreateOnionTunnelReady(onionTunnelReady)
-
-			// TODO: Send OnionTunnelReady to CM/UI module.
-			//log.Println(onionTunnelReadyMessage)
-		}
-
 		// Now, create the UDP Writer Right for the UDP to the next right hop and assign it
 		newUDPConnection, err := services.CreateInitialUDPConnectionRight(services.GetIPOutOfAddr(messageChannel.Host), int(onionPort), tunnelID)
 		if err != nil {
@@ -404,6 +393,7 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 
 
 		// TESTING
+
 		_, pub, _ := services.ParseKeys("keypair.pem")
 
 		hashedVersion = services.GenerateIdentityOfKey(pub)
@@ -468,6 +458,10 @@ func handleConfirmTunnelInnstructionConstruction(tunnelId uint32, data []byte, m
 
 		// TODO: Send OnionTunnelReady to CM/UI module.
 		//log.Println(onionTunnelReadyMessage)
+
+		for e := myPeer.PeerObject.TunnelHostOrder[tunnelId].Front(); e != nil; e = e.Next() {
+			fmt.Println(e.Value) // print out the elements
+		}
 	}
 }
 
