@@ -53,7 +53,8 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 			 // simply forward
 			 if myPeer.PeerObject.TCPConnections[tunnelID].RightWriter != nil {
 			 	log.Println("Right Writer exists, simply forward data to " + myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.DestinationIP + ", Port: " + strconv.Itoa(myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.DestinationPort))
-				 myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write(messageChannel.Message)
+				messageChannel.Message = append(messageChannel.Message, []byte("\r\n")...)
+				myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write(messageChannel.Message)
 			 } else {
 			 	// no right writer exists, handle data now to send the command
 			 	// first, determine the command out of data and execute the function
@@ -121,6 +122,7 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 
 			if myPeer.PeerObject.TCPConnections[tunnelID].LeftWriter != nil {
 				log.Println("Right Writer exists, simply forward data to " + myPeer.PeerObject.TCPConnections[tunnelID].LeftWriter.DestinationIP + ", Port: " + strconv.Itoa(myPeer.PeerObject.TCPConnections[tunnelID].LeftWriter.DestinationPort))
+				messageChannel.Message = append(messageChannel.Message, []byte("\r\n")...)
 				myPeer.PeerObject.TCPConnections[tunnelID].LeftWriter.TCPWriter.Write(messageChannel.Message)
 			} else {
 				data := messageChannel.Message[8:]
@@ -230,6 +232,7 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *se
 	myPeer.PeerObject.CryptoSessionMap[strconv.Itoa(int(tunnelID))] = &models.CryptoObject{TunnelId:tunnelID, PrivateKey:privateKey, PublicKey:publicKey, SessionKey:nil, Group:group}
 	//encryptedPubKey, err := services.DecryptKeyExchange(myPeer.PeerObject.PrivateKey, pubKey)
 
+	log.Println(x509.MarshalPKCS1PublicKey(myPeer.PeerObject.PublicKey))
 	decryptedPubKey, err := services.DecryptKeyExchange(myPeer.PeerObject.PrivateKey, pubKey)
 
 	err = saveEphemeralKey(decryptedPubKey, x509.MarshalPKCS1PublicKey(myPeer.PeerObject.PublicKey), tunnelID, myPeer)
@@ -246,7 +249,6 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *se
 
 	// Encrypt Pre-master secret with Origin Public Key
 	encryptedPublicKey, err := services.EncryptKeyExchange(originPubKey, publicKey)
-
 	// If everything worked out, send confirmTunnelConstruction back
 	confirmTunnelConstruction := models.ConfirmTunnelConstruction{TunnelID: tunnelID, Port: uint16(myPeer.PeerObject.UDPPort), DestinationHostkey: x509.MarshalPKCS1PublicKey(myPeer.PeerObject.PublicKey), PublicKey: encryptedPublicKey}
 	message := services.CreateConfirmTunnelCronstructionMessage(confirmTunnelConstruction)
@@ -300,7 +302,6 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 		myPeer.PeerObject.TunnelHostOrder[tunnelID].PushBack(hashedVersion)
 
 		decryptedPubKey, err := services.DecryptKeyExchange(myPeer.PeerObject.PrivateKey, pubKey)
-
 		err = saveEphemeralKey(decryptedPubKey, destinationHostkey, tunnelID, myPeer)
 		if err != nil{
 			log.Fatal("Handle Confirm Tunnel Construction: Error while saving ephemeral key")
@@ -317,36 +318,6 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 
 		// TODO: I THINK ONLY HERE FORWARDING TO CHANNEL
 		services.CommunicationChannelTCPConfirm <- services.ConfirmMessageChannel{TunnelId:tunnelID}
-
-
-
-		// TESTING
-		_, pub, _ := services.ParseKeys("keypair3.pem")
-
-		hashedVersion = services.GenerateIdentityOfKey(pub)
-
-		destinationHostkeyString := fmt.Sprintf("%s", hashedVersion)
-
-		// Only for First Hop
-		newIdentifier := strconv.Itoa(int(tunnelID)) + destinationHostkeyString
-
-		// Generate Pre Master Key for session.
-		privateKey, publicKey, group := services.GeneratePreMasterKey()
-		myPeer.PeerObject.CryptoSessionMap[newIdentifier] = &models.CryptoObject{TunnelId: tunnelID, PublicKey: publicKey, PrivateKey:privateKey,SessionKey:nil, Group:group}
-
-		// Encrypt Public Key with destination key
-		encryptedPubKey, err := services.EncryptKeyExchange(pub, publicKey)
-
-		log.Println("TESTING: SEND TUNNEL INSTRUCTION")
-		dataMessage := models.DataConstructTunnel{NetworkVersion: "IPv4", DestinationAddress: "192.168.0.15", Port: 4500, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub), PublicKey: encryptedPubKey}
-		data := services.CreateDataConstructTunnel(dataMessage)
-
-		// Now, just for tests, send a forward to a new peer
-		tunnelInstructionMessage := models.TunnelInstruction{TunnelID: tunnelID, Data: data}
-		message := services.CreateTunnelInstruction(tunnelInstructionMessage)
-
-		myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write(message)
-		log.Println("Sent Tunnel Instruction to " + myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.DestinationIP + ", Port: " + strconv.Itoa(myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.DestinationPort))
 	}
 }
 
@@ -377,11 +348,6 @@ func handleConfirmTunnelInnstructionConstruction(tunnelId uint32, data []byte, m
 		log.Fatal("Handle Confirm Tunnel Instruction Construction: Error while saving Ephemeral Key")
 	}
 
-
-	for e := myPeer.PeerObject.TunnelHostOrder[tunnelId].Front(); e != nil; e = e.Next() {
-		fmt.Println(e.Value) // print out the elements
-	}
-
 	if bytes.Equal(destinationHostkey, myPeer.PeerObject.TCPConnections[tunnelId].FinalDestination.DestinationHostkey) {
 		log.Println("Yes, we've connected to our final destination")
 
@@ -395,6 +361,9 @@ func handleConfirmTunnelInnstructionConstruction(tunnelId uint32, data []byte, m
 			fmt.Println(e.Value) // print out the elements
 		}
 	}
+
+	// TODO: perhaps yes here too????
+	services.CommunicationChannelTCPConfirm <- services.ConfirmMessageChannel{TunnelId:tunnelId}
 }
 
 // Save Ephemeral Key

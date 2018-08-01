@@ -22,11 +22,13 @@ type availableHost struct {
 
 var _, pub1, _ = services.ParseKeys("keypair2.pem")
 var _, pub2, _ = services.ParseKeys("keypair3.pem")
+var _, pub3, _ = services.ParseKeys("keypair4.pem")
 
 // define list of available host
 var AvailableHosts = []*availableHost{
-	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.0.15", Port:4200, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub1)},
-	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.0.15", Port:4500, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub1)},
+	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.0.10", Port:4200, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub1)},
+	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.0.10", Port:4500, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub2)},
+	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.0.10", Port:4800, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub3)},
 }
 
 func StartPeerController(myPeer *services.Peer) {
@@ -92,7 +94,7 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *s
 	myPeer.PeerObject.TCPConnections[newTunnelID] = &models.TCPConnection{newTunnelID, nil, nil, &models.OnionTunnelBuild{DestinationHostkey: destinationHostkey, Port: onionPort, DestinationAddress: destinationAddress, NetworkVersion: networkVersionString}, x509.MarshalPKCS1PublicKey(myPeer.PeerObject.PublicKey)}
 
 	// now, initiate Tunnel Construction
-	initiateTunnelConstruction(newTunnelID, myPeer, 3)
+	initiateTunnelConstruction(newTunnelID, myPeer, 4)
 }
 
 func initiateTunnelConstruction(tunnelId uint32, mypeer *services.Peer, minAmountHups int){
@@ -139,10 +141,10 @@ func initiateTunnelConstruction(tunnelId uint32, mypeer *services.Peer, minAmoun
 			log.Println("ConfirmListener: New confirm for tunnel " + strconv.Itoa(int(msg.TunnelId)))
 
 			// first, check if the tunnelID matchs to the id which initialized the function
-			if msg.TunnelId == tunnelId{
+			if msg.TunnelId == tunnelId {
 				// now, check if the length of TunnelHostOrder[tunnelId] < minAmountHups >> if so, start a new tunnel construction
 				if mypeer.PeerObject.TunnelHostOrder[tunnelId].Len() < minAmountHups {
-
+					connectToNextHop(AvailableHosts[mypeer.PeerObject.TunnelHostOrder[tunnelId].Len() - 1], tunnelId, mypeer)
 				} else {
 					log.Println("We've enough hops!!!!")
 					for e := mypeer.PeerObject.TunnelHostOrder[tunnelId].Front(); e != nil; e = e.Next() {
@@ -156,6 +158,36 @@ func initiateTunnelConstruction(tunnelId uint32, mypeer *services.Peer, minAmoun
 	}()
 }
 
-func connectToNextHop() {
+func connectToNextHop(nextHop *availableHost, tunnelId uint32, myPeer *services.Peer) {
+	hostkeyPub, err := x509.ParsePKCS1PublicKey(nextHop.DestinationHostkey)
+	if err != nil {
+		log.Println("Error parsing hostkeyPUB " , err.Error())
+	}
+	hashedVersion := services.GenerateIdentityOfKey(hostkeyPub)
+	destinationHostkeyString := fmt.Sprintf("%s", hashedVersion)
 
+	// Only for First Hop
+	newIdentifier := strconv.Itoa(int(tunnelId)) + destinationHostkeyString
+
+	// Generate Pre Master Key for session.
+	privateKey, publicKey, group := services.GeneratePreMasterKey()
+	myPeer.PeerObject.CryptoSessionMap[newIdentifier] = &models.CryptoObject{TunnelId: tunnelId, PublicKey: publicKey, PrivateKey:privateKey,SessionKey:nil, Group:group}
+
+	// Encrypt Public Key with destination key
+	log.Println("PEER: ", nextHop.DestinationHostkey)
+	encryptedPubKey, err := services.EncryptKeyExchange(hostkeyPub, publicKey)
+	if err != nil {
+		log.Println("Problem encrypting pubblic key")
+	}
+
+	log.Println("TESTING: SEND TUNNEL INSTRUCTION")
+	dataMessage := models.DataConstructTunnel{NetworkVersion: nextHop.NetworkVersion, DestinationAddress: nextHop.DestinationAddress, Port: uint16(nextHop.Port), DestinationHostkey: x509.MarshalPKCS1PublicKey(hostkeyPub), PublicKey: encryptedPubKey}
+	data := services.CreateDataConstructTunnel(dataMessage)
+
+	// Now, just for tests, send a forward to a new peer
+	tunnelInstructionMessage := models.TunnelInstruction{TunnelID: tunnelId, Data: data}
+	message := services.CreateTunnelInstruction(tunnelInstructionMessage)
+
+	myPeer.PeerObject.TCPConnections[tunnelId].RightWriter.TCPWriter.Write(message)
+	log.Println("Sent Tunnel Instruction to " + myPeer.PeerObject.TCPConnections[tunnelId].RightWriter.DestinationIP + ", Port: " + strconv.Itoa(myPeer.PeerObject.TCPConnections[tunnelId].RightWriter.DestinationPort))
 }
