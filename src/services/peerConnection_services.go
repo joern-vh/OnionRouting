@@ -192,6 +192,7 @@ func (peer *Peer) StartUDPListening() {
 }
 
 func (peer *Peer) CreateTCPWriter (destinationIP string, tcpPort int ) (*models.TCPWriter, error) {
+
 	conn, err := net.Dial("tcp", destinationIP + ":" + strconv.Itoa(tcpPort))
 	if err != nil {
 		return nil, errors.New("createTCPWriter: Error while dialing to destination, error: " + err.Error())
@@ -201,8 +202,8 @@ func (peer *Peer) CreateTCPWriter (destinationIP string, tcpPort int ) (*models.
 }
 
 // Creates a new TCPConnection for the peer with the left writer already set
-func (peer *Peer) CreateInitialTCPConnection(tunnelId uint32, finalDestinationHostkey []byte, leftWriter *models.TCPWriter) {
-	peer.PeerObject.TCPConnections[tunnelId] = &models.TCPConnection{tunnelId, leftWriter, nil, nil}
+func (peer *Peer) CreateInitialTCPConnection(tunnelId uint32, finalDestinationHostkey []byte, leftWriter *models.TCPWriter, originHostkey []byte) {
+	peer.PeerObject.TCPConnections[tunnelId] = &models.TCPConnection{tunnelId, leftWriter, nil, nil, originHostkey}
 }
 
 // SendMessage gets address, port and message(type byte) to send it to one peer

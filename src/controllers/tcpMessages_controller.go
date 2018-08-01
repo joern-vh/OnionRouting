@@ -92,15 +92,17 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 							 pubKey = data[endDestinationHostkey:]
 						 }
 
-							 // now, create new TCP RightWriter for the right side
-							 newTCPWriter, err := myPeer.CreateTCPWriter(ipAdd, int(port))
-							 if err != nil {
-								 return errors.New("Error creating tcp writer, error: " + err.Error())
-							 }
-							 myPeer.PeerObject.TCPConnections[tunnelID].RightWriter = newTCPWriter
-						 	_, pub, _ := services.ParseKeys("keypair1.pem")
-							 constructMessage := models.ConstructTunnel{NetworkVersion: networkVersionString, DestinationHostkey: destinationHostkey, OriginHostkey: x509.MarshalPKCS1PublicKey(pub) /* PubKey first Hop */, PublicKey: pubKey, TunnelID: tunnelID, DestinationAddress: ipAdd, OnionPort: uint16(myPeer.PeerObject.UDPPort), TCPPort: uint16(myPeer.PeerObject.P2P_Port)}
-							 message := services.CreateConstructTunnelMessage(constructMessage)
+
+						 // now, create new TCP RightWriter for the right side
+						 newTCPWriter, err := myPeer.CreateTCPWriter(ipAdd, int(port))
+						 log.Println(newTCPWriter)
+						 if err != nil {
+							log.Println(err.Error())
+							 return errors.New("Error creating tcp writer, error: " + err.Error())
+						 }
+						 myPeer.PeerObject.TCPConnections[tunnelID].RightWriter = newTCPWriter
+						 constructMessage := models.ConstructTunnel{NetworkVersion: networkVersionString, DestinationHostkey: destinationHostkey, OriginHostkey: myPeer.PeerObject.TCPConnections[tunnelID].OriginHostkey, PublicKey: pubKey, TunnelID: tunnelID, DestinationAddress: ipAdd, OnionPort: uint16(myPeer.PeerObject.UDPPort), TCPPort: uint16(myPeer.PeerObject.P2P_Port)}
+						 message := services.CreateConstructTunnelMessage(constructMessage)
 
 						 myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write(message)
 						 log.Println("Send Tunnel Construction to " + myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.DestinationIP + " , Port: " + strconv.Itoa(myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.DestinationPort))
@@ -213,7 +215,7 @@ func handleConstructTunnel(messageChannel services.TCPMessageChannel, myPeer *se
 	}
 
 	// Append the new TCPWriter as LeftTCPWriter to the TCP Connection
-	myPeer.CreateInitialTCPConnection(tunnelID, destinationHostkey ,newTCPWriter)
+	myPeer.CreateInitialTCPConnection(tunnelID, destinationHostkey ,newTCPWriter, originHostkey)
 
 	//  Now, create new UDP Connection with this "sender" as left side
 	newUDPConnection, err := services.CreateInitialUDPConnectionLeft(ipAdd, int(onionPort), tunnelID)
@@ -319,7 +321,7 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 
 
 		// TESTING
-		_, pub, _ := services.ParseKeys("keypair2.pem")
+		_, pub, _ := services.ParseKeys("keypair3.pem")
 
 		hashedVersion = services.GenerateIdentityOfKey(pub)
 
@@ -336,7 +338,7 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 		encryptedPubKey, err := services.EncryptKeyExchange(pub, publicKey)
 
 		log.Println("TESTING: SEND TUNNEL INSTRUCTION")
-		dataMessage := models.DataConstructTunnel{NetworkVersion: "IPv4", DestinationAddress: "192.168.0.10", Port: 4500, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub), PublicKey: encryptedPubKey}
+		dataMessage := models.DataConstructTunnel{NetworkVersion: "IPv4", DestinationAddress: "192.168.0.15", Port: 4500, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub), PublicKey: encryptedPubKey}
 		data := services.CreateDataConstructTunnel(dataMessage)
 
 		// Now, just for tests, send a forward to a new peer

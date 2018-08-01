@@ -25,8 +25,8 @@ var _, pub2, _ = services.ParseKeys("keypair3.pem")
 
 // define list of available host
 var AvailableHosts = []*availableHost{
-	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.0.10", Port:4200, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub1)},
-	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.0.10", Port:4500, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub1)},
+	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.0.15", Port:4200, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub1)},
+	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.0.15", Port:4500, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub1)},
 }
 
 func StartPeerController(myPeer *services.Peer) {
@@ -89,7 +89,7 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *s
 	// then, generate the hashed version of the destinationHostKey and add it as first value to the list
 	myPeer.PeerObject.TunnelHostOrder[newTunnelID].PushBack(services.GenerateIdentityOfKey(myPeer.PeerObject.PublicKey))
 	// now, add the new TCP Connection to the peer under TCPConnections, indentified by the newTunnelid
-	myPeer.PeerObject.TCPConnections[newTunnelID] = &models.TCPConnection{newTunnelID, nil, nil, &models.OnionTunnelBuild{DestinationHostkey: destinationHostkey, Port: onionPort, DestinationAddress: destinationAddress, NetworkVersion: networkVersionString}}
+	myPeer.PeerObject.TCPConnections[newTunnelID] = &models.TCPConnection{newTunnelID, nil, nil, &models.OnionTunnelBuild{DestinationHostkey: destinationHostkey, Port: onionPort, DestinationAddress: destinationAddress, NetworkVersion: networkVersionString}, x509.MarshalPKCS1PublicKey(myPeer.PeerObject.PublicKey)}
 
 	// now, initiate Tunnel Construction
 	initiateTunnelConstruction(newTunnelID, myPeer, 3)
