@@ -22,9 +22,10 @@ type TCPMessageChannel struct {
 	Host		string		// Attention, hast port
 }
 
-// GLobal channel for communication errors and messages from TCP
+// GLobal channel for communication errors and messages from TCP and special confirm messages for the peerController
 var CommunicationChannelTCPErrors chan error
 var CommunicationChannelTCPMessages chan TCPMessageChannel
+var CommunicationChannelTCPConfirm chan TCPMessageChannel
 
 // GLobal channel for communication errors and messages from TCP
 var CommunicationChannelUDPErrors chan error
@@ -76,6 +77,7 @@ func (peer *Peer) StartTCPListening() {
 	// Initialize global communicationChannelTCP
 	CommunicationChannelTCPErrors = make(chan error)
 	CommunicationChannelTCPMessages = make(chan TCPMessageChannel)
+	CommunicationChannelTCPConfirm = make(chan TCPMessageChannel)
 
 	go func() {
 		log.Println("StartTCPListening: Started listening")
