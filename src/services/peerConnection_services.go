@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"models"
 	"bytes"
+	"container/list"
 )
 
 // Just used to wrap the actual Peer from models.Peer here to use it as caller
@@ -37,18 +38,18 @@ func CreateNewPeer(config *models.Config) (*Peer, error) {
 	newTCPListener, err := createTCPListener(config.P2P_Port)
 	if err != nil {
 		log.Println("CreatePeer: Problem creating TCP listener, error: ", err)
-		return &Peer{&models.Peer{nil , nil, 0, 0, "", nil, nil, nil, nil, nil}}, err
+		return &Peer{&models.Peer{nil , nil, 0, 0, "", nil, nil, nil, nil, nil, nil}}, err
 	}
 
 	// Create new UDPConn to listen for udp messages
 	newUDPListener, UDPPort, err := createUDPListener()
 	if err != nil {
 		log.Println("CreatePeer: Problem creating UDP listener, error: ", err)
-		return &Peer{&models.Peer{nil , nil, 0, 0, "", nil, nil, nil,  nil, nil}}, err
+		return &Peer{&models.Peer{nil , nil, 0, 0, "", nil, nil, nil,  nil, nil, nil}}, err
 	}
 
 	// Create new peer
-	newPeer := &Peer{&models.Peer{newTCPListener, newUDPListener,  UDPPort,config.P2P_Port, config.P2P_Hostname, config.PrivateKey, config.PublicKey, make(map[uint32] *models.UDPConnection), make(map[uint32] *models.TCPConnection),  make(map[string] *models.CryptoObject)}}
+	newPeer := &Peer{&models.Peer{newTCPListener, newUDPListener,  UDPPort,config.P2P_Port, config.P2P_Hostname, config.PrivateKey, config.PublicKey, make(map[uint32] *models.UDPConnection), make(map[uint32] *models.TCPConnection),  make(map[string] *models.CryptoObject), make(map[uint32] *list.List)}}
 
 	return newPeer, nil
 }
@@ -172,14 +173,13 @@ func (peer *Peer) StartUDPListening() {
 		log.Println("StartUDPListening: Started listening")
 		buf := make([]byte, 1024)
 		for {
-			n,addr,err := peer.PeerObject.UDPListener.ReadFromUDP(buf)
+			n,_,err := peer.PeerObject.UDPListener.ReadFromUDP(buf)
 			if err != nil {
 				if err != nil {
 					log.Println("StartUDPListening: error " + err.Error())
 				}
 				CommunicationChannelUDPErrors <- err
 			}
-			log.Println("StartUDPListening: Message Received ", string(buf[0:n]), " from ",addr)
 
 			CommunicationChannelUDPMessages <- buf[0:n]
 
@@ -200,7 +200,7 @@ func (peer *Peer) CreateTCPWriter (destinationIP string, tcpPort int ) (*models.
 
 // Creates a new TCPConnection for the peer with the left writer already set
 func (peer *Peer) CreateInitialTCPConnection(tunnelId uint32, finalDestinationHostkey []byte, leftWriter *models.TCPWriter) {
-	peer.PeerObject.TCPConnections[tunnelId] = &models.TCPConnection{tunnelId, leftWriter, nil, nil, finalDestinationHostkey}
+	peer.PeerObject.TCPConnections[tunnelId] = &models.TCPConnection{tunnelId, leftWriter, nil, nil}
 }
 
 // SendMessage gets address, port and message(type byte) to send it to one peer

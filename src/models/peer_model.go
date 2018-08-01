@@ -20,6 +20,7 @@ type Peer struct {
 	UDPConnections		map[uint32]*UDPConnection 		`json:"udp_connections"`
 	TCPConnections		map[uint32]*TCPConnection 		`json:"tcp_writers"`
 	CryptoSessionMap	map[string]*CryptoObject 		`json:"crypto_session_map"`
+	TunnelHostOrder		map[uint32]*list.List			`json:"tunnel_host_order"`			// Save all hashed hostkey of a tunnel connection ordered in a list
 }
 
 // Identify by id in hashmap
@@ -27,8 +28,7 @@ type TCPConnection struct {
 	TunnelId				uint32 							`json:"tunnel_id"`
 	LeftWriter				*TCPWriter 						`json:"left_writer"`
 	RightWriter				*TCPWriter 						`json:"right_writer"`
-	ConnectionOrder			*list.List						`json:"connection_order"`
-	FinalDestinationHostkey	[]byte 							`json:"final_destination_hostkey"`
+	FinalDestination		*OnionTunnelBuild				`json:"final_destination"`
 }
 
 type TCPWriter struct {
