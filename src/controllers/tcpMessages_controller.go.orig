@@ -413,7 +413,11 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 		encryptedPubKey, err := services.EncryptKeyExchange(pub, publicKey)
 
 		log.Println("TESTING: SEND TUNNEL INSTRUCTION")
+<<<<<<< HEAD
 		dataMessage := models.DataConstructTunnel{NetworkVersion: "IPv4", DestinationAddress: "192.168.0.15", Port: 4500, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub), PublicKey: encryptedPubKey}
+=======
+		dataMessage := models.DataConstructTunnel{NetworkVersion: "IPv4", DestinationAddress: "192.168.0.10", Port: 4500, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub), PublicKey: encryptedPubKey}
+>>>>>>> 02b4e5a77774fdac9591a6b116d34f59c18dcaf3
 		data := services.CreateDataConstructTunnel(dataMessage)
 
 		// Now, just for tests, send a forward to a new peer
