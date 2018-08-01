@@ -29,10 +29,9 @@ func main() {
 	time.Sleep(time.Second * 1)
 	newPeer.StartUDPListening()
 
-	// Now, start TCP-Controlling
-	controllers.StartTCPController(newPeer)
+	// Now, start Controlling
+	controllers.StartPeerController(newPeer)
 	controllers.StartUDPController(newPeer)
-
 
 	c := make(chan os.Signal, 1)
 	// We'll accept graceful shutdowns when quit via SIGINT (Ctrl+C)

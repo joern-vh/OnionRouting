@@ -15,7 +15,7 @@ func main() {
 	}
 
 	// Open configuration file
-	//priv, pub, err := services.ParseKeys("testkey.pem")
+	//priv, pub, err := services.ParseKeys("keypair3.pem")
 
 	if err != nil {
 		log.Println("Failed parsing sencond keys.")
@@ -80,7 +80,7 @@ func main() {
 
 	log.Println("Decrypted Data 2: ", string(decryptedData2))
 
-	_, pubRSA, _ := services.ParseKeys("testkey.pem")
+	_, pubRSA, _ := services.ParseKeys("keypair3.pem")
 
 
 	log.Printf("Identity: %d\n", len(sha256.Sum256(x509.MarshalPKCS1PublicKey(pubRSA))))
