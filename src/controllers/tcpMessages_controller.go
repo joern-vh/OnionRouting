@@ -115,8 +115,8 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 								 return errors.New("Error creating tcp writer, error: " + err.Error())
 							 }
 							 myPeer.PeerObject.TCPConnections[tunnelID].RightWriter = newTCPWriter
-
-							 constructMessage := models.ConstructTunnel{NetworkVersion: networkVersionString, DestinationHostkey: destinationHostkey, OriginHostkey: destinationHostkey /* PubKey first Hop */, PublicKey: pubKey, TunnelID: tunnelID, DestinationAddress: ipAdd, OnionPort: uint16(myPeer.PeerObject.UDPPort), TCPPort: uint16(myPeer.PeerObject.P2P_Port)}
+						 	_, pub, _ := services.ParseKeys("private_key.pem")
+							 constructMessage := models.ConstructTunnel{NetworkVersion: networkVersionString, DestinationHostkey: destinationHostkey, OriginHostkey: x509.MarshalPKCS1PublicKey(pub) /* PubKey first Hop */, PublicKey: pubKey, TunnelID: tunnelID, DestinationAddress: ipAdd, OnionPort: uint16(myPeer.PeerObject.UDPPort), TCPPort: uint16(myPeer.PeerObject.P2P_Port)}
 							 message := services.CreateConstructTunnelMessage(constructMessage)
 
 						 myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write(message)
@@ -183,7 +183,10 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *s
 	log.Println("IP-Address of destination: ", destinationAddress)
 	log.Print("Onion Port of destination: ", onionPort)
 
-	destinationPubKey, err := x509.ParsePKCS1PublicKey(destinationHostkey)
+	_, pub, _ := services.ParseKeys("testkey.pem")
+
+	//destinationPubKey, err := x509.ParsePKCS1PublicKey(destinationHostkey)
+	destinationPubKey := pub
 	hashedVersion := services.GenerateIdentityOfKey(destinationPubKey)
 	destinationHostkeyString := fmt.Sprintf("%s", hashedVersion)
 
@@ -193,8 +196,8 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *s
 	// Generate Pre Master Key for session.
 	privateKey, publicKey, group := services.GeneratePreMasterKey()
 	myPeer.PeerObject.CryptoSessionMap[newIdentifier] = &models.CryptoObject{TunnelId: newTunnelID, PublicKey: publicKey, PrivateKey:privateKey,SessionKey:nil, Group:group}
-
-	encryptedPubKey, err := services.EncryptKeyExchange(destinationPubKey, publicKey)
+	//_, pub, _ := services.ParseKeys("testkey.pem")
+	encryptedPubKey, err := services.EncryptKeyExchange(pub, publicKey)
 
 	// Build Construct Tunnel Message
 	constructTunnelMessage := models.ConstructTunnel{NetworkVersion: networkVersionString, DestinationHostkey: x509.MarshalPKCS1PublicKey(myPeer.PeerObject.PublicKey), OriginHostkey: x509.MarshalPKCS1PublicKey(myPeer.PeerObject.PublicKey), PublicKey: encryptedPubKey, TunnelID: newTunnelID, DestinationAddress: destinationAddress, OnionPort: uint16(myPeer.PeerObject.UDPPort), TCPPort: uint16(myPeer.PeerObject.P2P_Port)}
@@ -411,7 +414,7 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 		encryptedPubKey, err := services.EncryptKeyExchange(pub, publicKey)
 
 		log.Println("TESTING: SEND TUNNEL INSTRUCTION")
-		dataMessage := models.DataConstructTunnel{NetworkVersion: "IPv4", DestinationAddress: "192.168.2.4", Port: 4500, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub), PublicKey: encryptedPubKey}
+		dataMessage := models.DataConstructTunnel{NetworkVersion: "IPv4", DestinationAddress: "192.168.0.10", Port: 4500, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub), PublicKey: encryptedPubKey}
 		data := services.CreateDataConstructTunnel(dataMessage)
 
 		// Now, just for tests, send a forward to a new peer
@@ -448,6 +451,11 @@ func handleConfirmTunnelInnstructionConstruction(tunnelId uint32, data []byte, m
 	err = saveEphemeralKey(decryptedPubKey, destinationHostkey, tunnelId, myPeer)
 	if err != nil {
 		log.Fatal("Handle Confirm Tunnel Instruction Construction: Error while saving Ephemeral Key")
+	}
+
+
+	for e := myPeer.PeerObject.TunnelHostOrder[tunnelId].Front(); e != nil; e = e.Next() {
+		fmt.Println(e.Value) // print out the elements
 	}
 
 	if bytes.Equal(destinationHostkey, myPeer.PeerObject.TCPConnections[tunnelId].FinalDestination.DestinationHostkey) {
