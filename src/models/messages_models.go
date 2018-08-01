@@ -69,3 +69,10 @@ type ExchangeKey struct {
 	DestinationHostkey		[]byte
 	PublicKey				[]byte
 }
+
+type RPSPeer struct {
+	NetworkVersion			string
+	OnionPort				uint16
+	DestinationAddress		string
+	PeerHostkey				[]byte
+}

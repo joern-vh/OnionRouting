@@ -198,3 +198,20 @@ func CreateOnionTunnelError(onionError models.OnionError) ([]byte) {
 
 	return message
 }
+
+func CreateRPSQuery() ([]byte) {
+	// Message Type
+	messageType := uint16(565)
+
+	// Convert messageType to Byte array
+	messageTypeBuf := new(bytes.Buffer)
+	binary.Write(messageTypeBuf, binary.BigEndian, messageType)
+	message := messageTypeBuf.Bytes()
+
+	// Prepend size of message
+	sizeBuf := new(bytes.Buffer)
+	binary.Write(sizeBuf, binary.BigEndian, uint16(len(message)+2))
+	message = append(sizeBuf.Bytes(), message...)
+
+	return message
+}

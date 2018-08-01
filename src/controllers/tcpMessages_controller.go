@@ -472,6 +472,7 @@ func handleConfirmTunnelInnstructionConstruction(tunnelId uint32, data []byte, m
 	}
 }
 
+// Save Ephemeral Key
 func saveEphemeralKey(PublicKey []byte, destinationHostkey []byte, tunnelID uint32, myPeer *services.Peer) (error) {
 	log.Println("EXCHANGE KEY")
 
@@ -503,4 +504,43 @@ func saveEphemeralKey(PublicKey []byte, destinationHostkey []byte, tunnelID uint
 	}
 
 	return nil
+}
+
+func handleRPSPeer(messageChannel services.TCPMessageChannel, myPeer *services.Peer) (models.RPSPeer) {
+	// Number of Portmaps
+	numberPortmaps := binary.BigEndian.Uint16(messageChannel.Message[4:6])
+
+	var portmap uint16
+	var onionPort uint16
+
+	// Get Portmaps
+	for i := 0; i < int(numberPortmaps); i++ {
+		// Get portmap type
+		portmap = binary.BigEndian.Uint16(messageChannel.Message[6+i*4:8+i*4])
+
+		// Onion Portmap
+		if portmap == 560 {
+			onionPort = binary.BigEndian.Uint16(messageChannel.Message[8+i*4:10+i*4])
+		}
+	}
+
+	// Get IP Address and hostkey
+	startIndexAddress := 6 + (numberPortmaps * 4)
+	networkVersion := binary.BigEndian.Uint16(messageChannel.Message[6:8])
+
+	var peerHostkey []byte
+	var networkVersionString string
+	var destinationAddress string
+
+	if networkVersion == 0 {
+		networkVersionString = "IPv4"
+		destinationAddress = net.IP(messageChannel.Message[startIndexAddress:startIndexAddress+4]).String()
+		peerHostkey = messageChannel.Message[startIndexAddress+4:]
+	} else if networkVersion == 1 {
+		networkVersionString = "IPv6"
+		destinationAddress = net.IP(messageChannel.Message[startIndexAddress:startIndexAddress+16]).String()
+		peerHostkey = messageChannel.Message[startIndexAddress+16:]
+	}
+
+	return models.RPSPeer{NetworkVersion: networkVersionString, OnionPort: onionPort, DestinationAddress: destinationAddress, PeerHostkey: peerHostkey}
 }
