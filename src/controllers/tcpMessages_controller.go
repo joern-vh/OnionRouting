@@ -393,7 +393,6 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 
 
 		// TESTING
-
 		_, pub, _ := services.ParseKeys("keypair.pem")
 
 		hashedVersion = services.GenerateIdentityOfKey(pub)
@@ -411,7 +410,7 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 		encryptedPubKey, err := services.EncryptKeyExchange(pub, publicKey)
 
 		log.Println("TESTING: SEND TUNNEL INSTRUCTION")
-		dataMessage := models.DataConstructTunnel{NetworkVersion: "IPv4", DestinationAddress: "192.168.2.4", Port: 4500, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub), PublicKey: encryptedPubKey}
+		dataMessage := models.DataConstructTunnel{NetworkVersion: "IPv4", DestinationAddress: "192.168.0.15", Port: 4500, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub), PublicKey: encryptedPubKey}
 		data := services.CreateDataConstructTunnel(dataMessage)
 
 		// Now, just for tests, send a forward to a new peer
@@ -487,8 +486,6 @@ func saveEphemeralKey(PublicKey []byte, destinationHostkey []byte, tunnelID uint
 		identifier = strconv.Itoa(int(tunnelID))
 	}
 	cryptoObject := myPeer.PeerObject.CryptoSessionMap[identifier]
-
-	//encryptedPublicKey, err := services.DecryptKeyExchange(myPeer.PeerObject.PrivateKey, PublicKey)
 
 	// Set new session Key if not set.
 	if cryptoObject.SessionKey == nil {
