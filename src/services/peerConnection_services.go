@@ -206,8 +206,8 @@ func (peer *Peer) CreateTCPWriter (destinationIP string, tcpPort int ) (*models.
 }
 
 // Creates a new TCPConnection for the peer with the left writer already set
-func (peer *Peer) CreateInitialTCPConnection(tunnelId uint32, finalDestinationHostkey []byte, leftWriter *models.TCPWriter, originHostkey []byte) {
-	peer.PeerObject.TCPConnections[tunnelId] = &models.TCPConnection{tunnelId, leftWriter, nil, nil, originHostkey}
+func (peer *Peer) CreateInitialTCPConnection(tunnelId uint32, finalDestinationHostkey []byte, leftWriter *models.TCPWriter) {
+	peer.PeerObject.TCPConnections[tunnelId] = &models.TCPConnection{TunnelId: tunnelId, LeftWriter: leftWriter, RightWriter: nil, FinalDestination: nil, LeftHostkey: finalDestinationHostkey, RightHostkey: nil, OriginHostkey: nil}
 }
 
 // SendMessage gets address, port and message(type byte) to send it to one peer

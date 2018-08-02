@@ -26,9 +26,9 @@ var _, pub3, _ = services.ParseKeys("keypair4.pem")
 
 // define list of available host
 var AvailableHosts = []*availableHost{
-	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.0.10", Port:4200, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub1)},
-	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.0.10", Port:4500, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub2)},
-	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.0.10", Port:4800, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub3)},
+	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.0.15", Port:4200, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub1)},
+	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.0.15", Port:4500, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub2)},
+	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.0.15", Port:4800, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub3)},
 }
 
 func StartPeerController(myPeer *services.Peer) {
@@ -91,7 +91,7 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *s
 	// then, generate the hashed version of the destinationHostKey and add it as first value to the list
 	myPeer.PeerObject.TunnelHostOrder[newTunnelID].PushBack(services.GenerateIdentityOfKey(myPeer.PeerObject.PublicKey))
 	// now, add the new TCP Connection to the peer under TCPConnections, indentified by the newTunnelid
-	myPeer.PeerObject.TCPConnections[newTunnelID] = &models.TCPConnection{newTunnelID, nil, nil, &models.OnionTunnelBuild{DestinationHostkey: destinationHostkey, Port: onionPort, DestinationAddress: destinationAddress, NetworkVersion: networkVersionString}, x509.MarshalPKCS1PublicKey(myPeer.PeerObject.PublicKey)}
+	myPeer.PeerObject.TCPConnections[newTunnelID] = &models.TCPConnection{newTunnelID, nil, nil, &models.OnionTunnelBuild{DestinationHostkey: destinationHostkey, Port: onionPort, DestinationAddress: destinationAddress, NetworkVersion: networkVersionString}, nil, nil,x509.MarshalPKCS1PublicKey(myPeer.PeerObject.PublicKey)}
 
 	// now, initiate Tunnel Construction
 	initiateTunnelConstruction(newTunnelID, myPeer, 4)
@@ -121,9 +121,22 @@ func initiateTunnelConstruction(tunnelId uint32, mypeer *services.Peer, minAmoun
 
 	// Generate Pre Master Key for session.
 	privateKey, publicKey, group := services.GeneratePreMasterKey()
-	mypeer.PeerObject.CryptoSessionMap[newIdentifier] = &models.CryptoObject{TunnelId: tunnelId, PublicKey: publicKey, PrivateKey:privateKey,SessionKey:nil, Group:group}
-	encryptedPubKey, err := services.EncryptKeyExchange(destinationPubKey, publicKey)
+	mypeer.PeerObject.CryptoSessionMap[newIdentifier] = &models.CryptoObject{TunnelId: tunnelId, PublicKey: publicKey, PrivateKey: privateKey,SessionKey:nil, Group:group}
 
+	log.Println(x509.MarshalPKCS1PublicKey(mypeer.PeerObject.PublicKey))
+
+	// Testing key exchange
+	exchangeKey := models.ExchangeKey{TunnelID: tunnelId, TCPPort: uint16(mypeer.PeerObject.P2P_Port), Status: uint16(0), DestinationHostkey: x509.MarshalPKCS1PublicKey(mypeer.PeerObject.PublicKey), PublicKey: publicKey}
+	exchangeKeyMessage := services.CreateExchangeKey(exchangeKey, destinationPubKey, destinationPubKey)
+
+	// Append Delimiter
+	exchangeKeyMessage = append(exchangeKeyMessage, []byte("\r\n")...)
+
+	mypeer.PeerObject.TCPConnections[tunnelId].RightWriter.TCPWriter.Write(exchangeKeyMessage)
+
+
+	// OLD
+	/*
 	constructTunnelMessage := models.ConstructTunnel{AvailableHosts[0].NetworkVersion, uint16(mypeer.PeerObject.UDPPort), uint16(mypeer.PeerObject.P2P_Port), uint32(tunnelId), AvailableHosts[0].DestinationAddress, x509.MarshalPKCS1PublicKey(mypeer.PeerObject.PublicKey), x509.MarshalPKCS1PublicKey(mypeer.PeerObject.PublicKey), encryptedPubKey}
 	// Build Construct Tunnel Message
 	message := services.CreateConstructTunnelMessage(constructTunnelMessage)
@@ -155,7 +168,7 @@ func initiateTunnelConstruction(tunnelId uint32, mypeer *services.Peer, minAmoun
 			}
 			// no else needed, another instance of the function handles that
 		}
-	}()
+	}()*/
 }
 
 func connectToNextHop(nextHop *availableHost, tunnelId uint32, myPeer *services.Peer) {

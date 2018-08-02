@@ -50,8 +50,11 @@ func ComputeEphemeralKey(g *dhkx.DHGroup, receivedPublicKey []byte, priv *dhkx.D
 
 	recvPubKey := dhkx.NewPublicKey(receivedPublicKey)
 
+	log.Println("HERE EPH")
+
 	// Compute the key
 	k, err := g.ComputeKey(recvPubKey, priv)
+
 
 	if err != nil {
 		log.Fatal("Compute Ephemeral Key: ", err.Error())
@@ -84,7 +87,7 @@ func DecryptKeyExchange(privateKey *rsa.PrivateKey, key []byte) ([]byte, error) 
 	label := []byte("")
 	decryptedData, err := rsa.DecryptOAEP(sha256.New(), rand.Reader, privateKey, key, []byte(label))
 	if err != nil {
-		log.Fatalf("Decrypt: %s", err)
+		log.Print("Decrypt: %s", err)
 		return nil, errors.New("Crypto: New Error occurred while decrypting DH Public key: " + err.Error())
 	}
 

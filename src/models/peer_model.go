@@ -29,6 +29,8 @@ type TCPConnection struct {
 	LeftWriter				*TCPWriter 						`json:"left_writer"`
 	RightWriter				*TCPWriter 						`json:"right_writer"`
 	FinalDestination		*OnionTunnelBuild				`json:"final_destination"`
+	LeftHostkey				[]byte							`json:"left_hostkey"`
+	RightHostkey			[]byte							`json:"right_hostkey"`
 	OriginHostkey			[]byte							`json:"origin_hostkey"`
 }
 
