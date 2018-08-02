@@ -297,7 +297,8 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 		// Now, create a udp righter to the right side (where we forwarded our tunnel construction to
 		newRightUDPWriter, err := services.CreateUDPWriter(services.GetIPOutOfAddr(messageChannel.Host), int(onionPort))
 		if err != nil {
-			log.Println("Error creating UDP Writer right >> " +  err.Error())
+			services.CummunicationChannelError <- services.ChannelError{TunnelId:binary.BigEndian.Uint32(messageChannel.Message[4:8]), Error: errors.New("Error creating UDP Writer right >> " + err.Error())}
+			return
 		}
 		myPeer.PeerObject.UDPConnections[tunnelID].RightWriter = newRightUDPWriter
 
@@ -308,7 +309,11 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 		log.Println("Final Destination exists??????")
 		log.Println(myPeer.PeerObject.TCPConnections[tunnelID])
 
-		myPeer.PeerObject.TCPConnections[tunnelID].LeftWriter.TCPWriter.Write(message)
+		_, err = myPeer.PeerObject.TCPConnections[tunnelID].LeftWriter.TCPWriter.Write(message)
+		if err != nil {
+			services.CummunicationChannelError <- services.ChannelError{TunnelId:binary.BigEndian.Uint32(messageChannel.Message[4:8]), Error: errors.New("Error while writing " + err.Error())}
+			return
+		}
 	} else {
 		log.Println("Final Destination > PEER 0")
 		log.Println(myPeer.PeerObject.TCPConnections[tunnelID].FinalDestination)
@@ -316,7 +321,8 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 		// we reached peer 0 > create hashed hostkey of confirmation sender and add it to tunnelHostOrder
 		newPublicKey, err := x509.ParsePKCS1PublicKey(destinationHostkey)
 		if err != nil {
-			log.Println("Couldn't convert []byte destinationHostKey to rsa Publickey, ", err.Error())
+			services.CummunicationChannelError <- services.ChannelError{TunnelId:binary.BigEndian.Uint32(messageChannel.Message[4:8]), Error: errors.New("Couldn't convert []byte destinationHostKey to rsa Publickey,  " + err.Error())}
+			return
 		}
 		hashedVersion := services.GenerateIdentityOfKey(newPublicKey)
 		myPeer.PeerObject.TunnelHostOrder[tunnelID].PushBack(hashedVersion)
@@ -324,19 +330,19 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 		decryptedPubKey, err := services.DecryptKeyExchange(myPeer.PeerObject.PrivateKey, pubKey)
 		err = saveEphemeralKey(decryptedPubKey, destinationHostkey, tunnelID, myPeer)
 		if err != nil{
-			log.Fatal("Handle Confirm Tunnel Construction: Error while saving ephemeral key")
-
-			// ToDo: ONION TUNNEL ERROR
+			services.CummunicationChannelError <- services.ChannelError{TunnelId:binary.BigEndian.Uint32(messageChannel.Message[4:8]), Error: errors.New("Handle Confirm Tunnel Construction: Error while saving ephemeral key " + err.Error())}
+			return
 		}
 
 		// Now, create the UDP Writer Right for the UDP to the next right hop and assign it
 		newUDPConnection, err := services.CreateInitialUDPConnectionRight(services.GetIPOutOfAddr(messageChannel.Host), int(onionPort), tunnelID)
 		if err != nil {
-			log.Println("handleConfirmTunnelConstruction while creating udp connection: " + err.Error())
+			services.CummunicationChannelError <- services.ChannelError{TunnelId:binary.BigEndian.Uint32(messageChannel.Message[4:8]), Error: errors.New("handleConfirmTunnelConstruction while creating udp connection:  " + err.Error())}
+			return
+
 		}
 		myPeer.AppendNewUDPConnection(newUDPConnection)
 
-		// TODO: I THINK ONLY HERE FORWARDING TO CHANNEL
 		services.CommunicationChannelTCPConfirm <- services.ConfirmMessageChannel{TunnelId:tunnelID}
 	}
 }
