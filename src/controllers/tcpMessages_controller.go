@@ -152,12 +152,31 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 }
 
 func handleOnionTunnelDestroy(messageChannel services.TCPMessageChannel, myPeer *services.Peer) {
-	log.Println("ONION TUNNEL DESTROY received")
+	log.Println("ONION TUNNEL DESTROY")
 	tunnelID := binary.BigEndian.Uint32(messageChannel.Message[4:8])
 	log.Println(tunnelID)
 
-	// first, check if right writer tcp exists >> if so, we need to forward the handleOnionTunnelDestroy too
+	// check if right writer tcp exists >
+	if myPeer.PeerObject.TCPConnections[tunnelID] != nil {
 
+		if myPeer.PeerObject.TCPConnections[tunnelID].RightWriter != nil {
+			onionTunnelDestroy := models.OnionTunnelDestroy{TunnelID:tunnelID}
+			message := services.CreateOnionTunnelDestroy(onionTunnelDestroy)
+			//newMessage := append(message, []byte("\r\n")...)
+			//log.Println(newMessage)
+			myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write(message)
+		}
+		// now, delete everything
+		delete(myPeer.PeerObject.TCPConnections, tunnelID)
+		delete(myPeer.PeerObject.UDPConnections, tunnelID)
+		// TODO: Delete Cryptpsessionmap
+		delete(myPeer.PeerObject.TunnelHostOrder, tunnelID)
+	} else {
+		log.Println("Done deleting")
+	}
+	log.Println(myPeer.PeerObject.TCPConnections[tunnelID])
+
+	return
 }
 
 
