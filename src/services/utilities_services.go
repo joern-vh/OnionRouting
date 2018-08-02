@@ -3,7 +3,10 @@ package services
 import (
 	"strings"
 	"net"
+	"math/rand"
 )
+
+const symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 
 func GetIPOutOfAddr(addr string) string {
 	if idx := strings.Index(addr, ":"); idx != -1 {
@@ -26,4 +29,14 @@ func getFreePort() (int, error) {
 	defer l.Close()
 
 	return l.Addr().(*net.TCPAddr).Port, nil
+}
+
+// used to generate random data
+func GenRandomData() []byte{
+	length := (rand.Intn(300 - 0) + 0)
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = symbols[rand.Intn(len(symbols))]
+	}
+	return b
 }
