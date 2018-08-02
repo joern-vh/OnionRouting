@@ -32,6 +32,7 @@ func main() {
 	// Now, start Controlling
 	controllers.StartPeerController(newPeer)
 	controllers.StartUDPController(newPeer)
+	controllers.StartErrorHandling(newPeer)
 
 	c := make(chan os.Signal, 1)
 	// We'll accept graceful shutdowns when quit via SIGINT (Ctrl+C)
