@@ -11,6 +11,7 @@ import (
 	"crypto/x509"
 	"container/list"
 	"net"
+	"os"
 )
 
 type availableHost struct {
@@ -49,7 +50,9 @@ func StartErrorHandling(myPeer *services.Peer){
 		for error := range services.CummunicationChannelError {
 			log.Println("\n\n")
 			log.Println("StartErrorHandling, new error for Tunnel " , strconv.Itoa(int(error.TunnelId)))
+			log.Println(error.Error.Error())
 			// Now, handle error
+			os.Exit(1)
 		}
 	}()
 }

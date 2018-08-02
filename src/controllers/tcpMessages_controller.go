@@ -21,7 +21,7 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 	switch messageType {
 		// ONION TUNNEL DESTROY
 		case 563:
-			handleOnionTunnelDestroy(messageChannel)
+			handleOnionTunnelDestroy(messageChannel, myPeer)
 			break
 
 		// ONION TUNNEL DATA
@@ -145,17 +145,19 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 			break
 
 		default:
-			services.CummunicationChannelError <- services.ChannelError{TunnelId:binary.BigEndian.Uint32(messageChannel.Message[4:8]), Error: errors.New("tcpMessagesController: Message Type not Found")}
 			return
 	}
 
 	return
 }
 
-func handleOnionTunnelDestroy(messageChannel services.TCPMessageChannel) {
+func handleOnionTunnelDestroy(messageChannel services.TCPMessageChannel, myPeer *services.Peer) {
 	log.Println("ONION TUNNEL DESTROY received")
 	tunnelID := binary.BigEndian.Uint32(messageChannel.Message[4:8])
-	log.Printf("Tunnel ID: %s\n", tunnelID)
+	log.Println(tunnelID)
+
+	// first, check if right writer tcp exists >> if so, we need to forward the handleOnionTunnelDestroy too
+
 }
 
 
@@ -358,7 +360,8 @@ func handleConfirmTunnelInnstructionConstruction(tunnelId uint32, data []byte, m
 
 	newPublicKey, err := x509.ParsePKCS1PublicKey(destinationHostkey)
 	if err != nil {
-		log.Println("Couldn't convert []byte destinationHostKey to rsa Publickey")
+		services.CummunicationChannelError <- services.ChannelError{TunnelId:tunnelId, Error: errors.New("Couldn't convert []byte destinationHostKey to rsa Publickey " + err.Error())}
+		return
 	}
 
 	// Now, create hashed version of the destination hostkey and add it to the TunnelHostOrder
@@ -367,11 +370,16 @@ func handleConfirmTunnelInnstructionConstruction(tunnelId uint32, data []byte, m
 
 	// Decrypt Pre master secret
 	decryptedPubKey, err := services.DecryptKeyExchange(myPeer.PeerObject.PrivateKey, pubKey)
+	if err != nil {
+		services.CummunicationChannelError <- services.ChannelError{TunnelId:tunnelId, Error: errors.New("Couldn't run DecryptKeyExchange(), " + err.Error())}
+		return
+	}
 
 	// Save Ephemeral Key
 	err = saveEphemeralKey(decryptedPubKey, destinationHostkey, tunnelId, myPeer)
 	if err != nil {
-		log.Fatal("Handle Confirm Tunnel Instruction Construction: Error while saving Ephemeral Key")
+		services.CummunicationChannelError <- services.ChannelError{TunnelId:tunnelId, Error: errors.New("Handle Confirm Tunnel Instruction Construction: Error while saving Ephemeral Key " + err.Error())}
+		return
 	}
 
 	if bytes.Equal(destinationHostkey, myPeer.PeerObject.TCPConnections[tunnelId].FinalDestination.DestinationHostkey) {
