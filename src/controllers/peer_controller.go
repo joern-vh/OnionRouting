@@ -39,7 +39,18 @@ func StartPeerController(myPeer *services.Peer) {
 			log.Println("StartPeerController: New message from " + msg.Host)
 			handleTCPMessage(msg, myPeer)
 			handlePeerControllerMessage(msg, myPeer)
-			}
+		}
+	}()
+}
+
+func StartErrorHandling(myPeer *services.Peer){
+	log.Println("Error Handling, started Controller")
+	go func() {
+		for error := range services.CummunicationChannelError {
+			log.Println("\n\n")
+			log.Println("StartErrorHandling, new error for Tunnel " , strconv.Itoa(int(error.TunnelId)))
+			// Now, handle error
+		}
 	}()
 }
 
@@ -48,13 +59,13 @@ func handlePeerControllerMessage(messageChannel services.TCPMessageChannel, myPe
 	log.Println("PeerController: Messagetype:", messageType)
 
 	switch messageType {
-		// ONION TUNNEL BUILD
-		case 560:
-			handleOnionTunnelBuild(messageChannel, myPeer)
-			break
+	// ONION TUNNEL BUILD
+	case 560:
+		handleOnionTunnelBuild(messageChannel, myPeer)
+		break
 
-		default:
-			return nil
+	default:
+		return nil
 	}
 
 	return nil
