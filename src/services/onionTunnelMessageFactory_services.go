@@ -155,6 +155,34 @@ func CreateTunnelInstruction(tunnelInstruction models.TunnelInstruction) ([]byte
 	return message
 }
 
+func CreateOnionTunnelTrafficJamTCP(tunnelTrafficJam models.OnionTunnelTrafficJam) ([]byte) {
+	// Message Type
+	messageType := uint16(566)
+
+	// Convert messageType to Byte array
+	messageTypeBuf := new(bytes.Buffer)
+	binary.Write(messageTypeBuf, binary.BigEndian, messageType)
+	message := messageTypeBuf.Bytes()
+
+	// Convert tunnelID to Byte Arrays
+	tunnelIDBuf := new(bytes.Buffer)
+	binary.Write(tunnelIDBuf, binary.BigEndian, tunnelTrafficJam.TunnelID)
+	message = append(message, tunnelIDBuf.Bytes()...)
+
+	// ToDo: Encrypt Data.
+	message = append(message, tunnelTrafficJam.Data...)
+
+	// Append Delimiter
+	message = append(message, []byte("\r\n")...)
+
+	// Prepend size of message
+	sizeBuf := new(bytes.Buffer)
+	binary.Write(sizeBuf, binary.BigEndian, uint16(len(message)+2))
+	message = append(sizeBuf.Bytes(), message...)
+
+	return message
+}
+
 func CreateConfirmTunnelInstruction(confirmTunnelInstruction models.ConfirmTunnelInstruction) ([]byte) {
 	// Message Type
 	messageType := uint16(570)

@@ -25,6 +25,11 @@ type OnionTunnelData struct {
 	Data 					[]byte
 }
 
+type OnionTunnelTrafficJam struct {
+	TunnelID 				uint32
+	Data 					[]byte
+}
+
 type OnionError struct {
 	RequestType 			uint16
 	Reserved 				uint16

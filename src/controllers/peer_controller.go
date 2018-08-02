@@ -146,6 +146,13 @@ func initiateTunnelConstruction(tunnelId uint32, mypeer *services.Peer, minAmoun
 	// at last, send the constructTunnelMessage
 	mypeer.PeerObject.TCPConnections[tunnelId].RightWriter.TCPWriter.Write(message)
 
+	// Now, start traffic jamming
+	newOnionJammingMessage := models.OnionTunnelTrafficJam{TunnelID:tunnelId, Data: services.GenRandomData()}
+	messageJamming := services.CreateOnionTunnelTrafficJamTCP(newOnionJammingMessage)
+	log.Println(messageJamming)
+	mypeer.PeerObject.TCPConnections[tunnelId].RightWriter.TCPWriter.Write(messageJamming)
+
+
 	// Then, start listening
 	// TODO: Write function to keep track of confirmations >>> build evntloop
 	log.Println("Start listening for Confirm messages")

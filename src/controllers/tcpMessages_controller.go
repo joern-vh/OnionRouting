@@ -144,7 +144,16 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 			}
 			break
 
-		default:
+		case 566:
+			log.Println("Messagetype: Onion Tunnel Traffic Jam TCP")
+			tunnelID := binary.BigEndian.Uint32(messageChannel.Message[4:8])
+			data := messageChannel.Message[8:]
+			log.Println("Fake data send on tunnel ", tunnelID)
+			log.Println(data)
+			break
+
+
+	default:
 			return
 	}
 
