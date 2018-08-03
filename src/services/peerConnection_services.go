@@ -150,7 +150,7 @@ func createUDPListener() (*net.UDPConn, int, error) {
 	log.Println("createUDPListener: Create a new listener for UDP")
 
 	// First, create new port
-	port, err := getFreePort()
+	port, err := GetFreePort()
 	log.Println("createUDPListener: my port: " + strconv.Itoa(port))
 	if err != nil {
 		return nil, 0, errors.New("createUDPConn: Couldn't create new port, " + err.Error())

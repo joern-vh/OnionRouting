@@ -15,6 +15,7 @@ import (
 	"math/rand"
 	"time"
 	"errors"
+	"github.com/Thomasdezeeuw/ini"
 )
 
 type availableHost struct {
@@ -30,9 +31,9 @@ var _, pub3, _ = services.ParseKeys("keypair4.pem")
 
 // define list of available host
 var AvailableHosts = []*availableHost{
-	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.0.10", Port:4200, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub1)},
-	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.0.10", Port:4500, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub2)},
-	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.0.10", Port:4800, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub3)},
+	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.2.3", Port:4200, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub1)},
+	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.2.3", Port:4500, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub2)},
+	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.2.3", Port:4800, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub3)},
 }
 
 func StartPeerController(myPeer *services.Peer) {
@@ -78,6 +79,8 @@ func handlePeerControllerMessage(messageChannel services.TCPMessageChannel, myPe
 }
 
 func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *services.Peer) {
+	readHosts()
+
 	log.Print("Messagetype: Onion tunnel build")
 	var networkVersionString string
 	var destinationAddress string
@@ -170,6 +173,13 @@ func initiateTunnelConstruction(tunnelId uint32, mypeer *services.Peer, minAmoun
 			if msg.TunnelId == tunnelId {
 				// now, check if the length of TunnelHostOrder[tunnelId] < minAmountHups >> if so, start a new tunnel construction
 				if mypeer.PeerObject.TunnelHostOrder[tunnelId].Len() < minAmountHups {
+					// ToDo: RPS Module
+						// rpsQuery := services.CreateRPSQuery()
+					// Send to RPS Module
+					// Wait for response
+						// rpsPeer := handleRPSPeer()
+						// connectToNextHop(rpsPeer, tunnelId, mypeer)
+
 					connectToNextHop(AvailableHosts[mypeer.PeerObject.TunnelHostOrder[tunnelId].Len() - 1], tunnelId, mypeer)
 				} else {
 					log.Println("We've enough hops!!!!")
@@ -238,4 +248,39 @@ func InitiateTrafficJamming(tunnelId uint32, myPeer *services.Peer)  {
 			return
 		}
 	}
+}
+
+func readHosts() {
+	AvailableHosts = []*availableHost{}
+	log.Println("Read Hosts")
+	// Open hosts file
+	file, err := os.Open("tests/hosts.ini")
+	if err != nil {
+	}
+	defer file.Close()
+
+	// Parse the actual configuration
+	hosts, err := ini.Parse(file)
+	if err != nil {
+	}
+
+	// Need to be done like this to handle erros
+	number, err := strconv.Atoi(hosts["Hosts"]["Number"])
+	if err != nil {
+	}
+
+	for i := 1; i <= number; i++ {
+		identifier := "Host" + strconv.Itoa(i)
+		log.Println(identifier)
+		networkVersion := hosts[identifier]["NetworkVersion"]
+		destinationAddress := hosts[identifier]["DestinationAddress"]
+		port, _ := strconv.Atoi(hosts[identifier]["Port"])
+		destinationHostkeyPath := hosts[identifier]["DestinationHostkey"]
+		_, pub, _ := services.ParseKeys(destinationHostkeyPath)
+
+		availableHost := availableHost{NetworkVersion: networkVersion, DestinationAddress: destinationAddress, Port: port, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub)}
+		AvailableHosts = append(AvailableHosts, &availableHost)
+	}
+
+	log.Println(AvailableHosts)
 }
