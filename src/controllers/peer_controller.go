@@ -218,7 +218,6 @@ func connectToNextHop(nextHop *availableHost, tunnelId uint32, myPeer *services.
 	log.Println("Sent Tunnel Instruction to " + myPeer.PeerObject.TCPConnections[tunnelId].RightWriter.DestinationIP + ", Port: " + strconv.Itoa(myPeer.PeerObject.TCPConnections[tunnelId].RightWriter.DestinationPort))
 }
 
-// TODO: !!!!!!!! MAKE FORWARDING !!!!!!
 func InitiateTrafficJamming(tunnelId uint32, myPeer *services.Peer)  {
 	i := 0
 	for true {
