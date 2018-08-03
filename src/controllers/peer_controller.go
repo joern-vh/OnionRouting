@@ -195,7 +195,12 @@ func initiateTunnelConstruction(tunnelId uint32, mypeer *services.Peer, minAmoun
 					ReadyMessage := models.OnionTunnelReady{DestinationHostkey: mypeer.PeerObject.TCPConnections[tunnelId].FinalDestination.DestinationHostkey, TunnelID: tunnelId}
 					message := services.CreateOnionTunnelReady(ReadyMessage)
 
-					conn.Write(message)
+					n, err1 := conn.Write(message)
+					if err1 != nil {
+						log.Println(err1.Error())
+					}
+
+					log.Println(n)
 
 					for e := mypeer.PeerObject.TunnelHostOrder[tunnelId].Front(); e != nil; e = e.Next() {
 						fmt.Println(e.Value) // print out the elements

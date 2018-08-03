@@ -11,6 +11,7 @@ import (
 	"crypto/x509"
 	"os/signal"
 	"bytes"
+	"encoding/binary"
 )
 
 // Used to transmit the message and the ip in the CommunicationChannelTCPMessages
@@ -65,6 +66,8 @@ func main()  {
 	}
 
 	CommunicationChannelTCPMessages = make(chan TCPMessageChannel)
+
+	listening()
 
 	// accept new connections on TCP
 	go func() {
@@ -155,6 +158,7 @@ func listening() {
 			log.Println("\n\n")
 			log.Println("StartPeerController: New message from " + msg.Host)
 			log.Println(msg.Message)
+			log.Println("Message Type: ", binary.BigEndian.Uint16(msg.Message[2:4]))
 		}
 	}()
 }
