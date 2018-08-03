@@ -7,3 +7,9 @@
 
 ## Instructions
 * run `go run src peer.go -C PATH/TO/CONFIG.INI`
+
+## Status
+The master branch contains a runnable version of our implementation.
+The encryption branch contains our implementation including encryption. Unfortunately, we had some issues with some hostkeys.
+
+Detailed explanation of our project's status will be stated in our final report.
