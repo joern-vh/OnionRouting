@@ -17,3 +17,4 @@ config3.ini
 
 peerTestUDP.go
 peerController.go
+peerTestDelete.go

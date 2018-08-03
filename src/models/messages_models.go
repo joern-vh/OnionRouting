@@ -56,6 +56,7 @@ type ConfirmTunnelConstruction struct {
 
 type TunnelInstruction struct {
 	TunnelID 				uint32
+	OriginHostkey			[]byte
 	Data					[]byte
 }
 

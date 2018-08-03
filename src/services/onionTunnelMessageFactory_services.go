@@ -12,6 +12,7 @@ import (
 /*
 	Function to create Construct Tunnel Messages. Type: 567.
 	Encrypted with ephemeral key between the sender and the destination
+	ToDo: Encrypt tunnelID and switch place of port
  */
 func CreateConstructTunnelMessage(constructTunnel models.ConstructTunnel, sessionKey []byte, destinationPublicKey *rsa.PublicKey) ([]byte) {
 	// Message Type
@@ -25,7 +26,6 @@ func CreateConstructTunnelMessage(constructTunnel models.ConstructTunnel, sessio
 
 	// Convert tunnelID to Byte Array
 	tunnelIDBuf := new(bytes.Buffer)
-	//newID := CreateTunnelID()
 	binary.Write(tunnelIDBuf, binary.BigEndian, constructTunnel.TunnelID)
 	message = append(message, tunnelIDBuf.Bytes()...)
 
@@ -40,14 +40,21 @@ func CreateConstructTunnelMessage(constructTunnel models.ConstructTunnel, sessio
 	// Append size of origin hostkey
 	originHostkeyLengthBuf := new(bytes.Buffer)
 	binary.Write(originHostkeyLengthBuf, binary.BigEndian, uint16(len(constructTunnel.OriginHostkey)))
-	message = append(message, originHostkeyLengthBuf.Bytes()...)
+	//message = append(message, originHostkeyLengthBuf.Bytes()...)
+	messageToEncrypt := originHostkeyLengthBuf.Bytes()
 
 	// Append originHostkey to Message Array
-	message = append(message, constructTunnel.OriginHostkey...)
+	messageToEncrypt = append(messageToEncrypt, constructTunnel.OriginHostkey...)
 
 	// Append public key to Message Array
-	message = append(message, constructTunnel.PublicKey...)
+	messageToEncrypt = append(messageToEncrypt, constructTunnel.PublicKey...)
 
+	EncryptedMessage, err := EncryptData(sessionKey, messageToEncrypt)
+	if err != nil {
+		log.Println("CreateConstructTunnel: Failed to Encrypt message", err.Error())
+	}
+
+	message = append(message, EncryptedMessage...)
 
 	// Append Delimiter
 	message = append(message, []byte("\r\n")...)
@@ -60,15 +67,15 @@ func CreateConstructTunnelMessage(constructTunnel models.ConstructTunnel, sessio
 	return message
 }
 
-func CreateConfirmTunnelCronstructionMessage(confirmTunnelConstruction models.ConfirmTunnelConstruction/*, sessionKey []byte*/, destinationPublicKey *rsa.PublicKey) ([]byte) {
+/*
+	Function to create Construct Tunnel Messages. Type: 567.
+	Encrypted with ephemeral key between the sender and the destination
+	ToDo: Encrypt tunnelID
+ */
+func CreateConfirmTunnelCronstructionMessage(confirmTunnelConstruction models.ConfirmTunnelConstruction, sessionKey []byte, destinationPublicKey *rsa.PublicKey) ([]byte) {
 	// Message Type
 	messageType := uint16(568)
 	message := encryptMessageType(messageType, destinationPublicKey)
-
-	// Convert port to Byte Array
-	portBuf := new(bytes.Buffer)
-	binary.Write(portBuf, binary.BigEndian, confirmTunnelConstruction.Port)
-	message = append(message, portBuf.Bytes()...)
 
 	// Convert tunnelID to Byte Array
 	tunnelIDBuf := new(bytes.Buffer)
@@ -83,8 +90,24 @@ func CreateConfirmTunnelCronstructionMessage(confirmTunnelConstruction models.Co
 	// Append hostkey of oneself to Message Array
 	message = append(message, confirmTunnelConstruction.DestinationHostkey...)
 
+	// Convert port to Byte Array
+	portBuf := new(bytes.Buffer)
+	binary.Write(portBuf, binary.BigEndian, confirmTunnelConstruction.Port)
+	messageToEncrypt := portBuf.Bytes()
+
+	log.Println("UDP Port: ", confirmTunnelConstruction.Port)
+
 	// Append PublicKey to Message Array
-	message = append(message, confirmTunnelConstruction.PublicKey...)
+	messageToEncrypt = append(messageToEncrypt, confirmTunnelConstruction.PublicKey...)
+
+	// Encrypt Message
+	EncryptedMessage, err := EncryptData(sessionKey, messageToEncrypt)
+	if err != nil {
+		log.Println("Create Confirm Tunnel Instruction: Failed to Encrypt message", err.Error())
+	}
+
+	// Append Encrypted Message
+	message = append(message, EncryptedMessage...)
 
 	// Append Delimiter
 	message = append(message, []byte("\r\n")...)
@@ -97,19 +120,23 @@ func CreateConfirmTunnelCronstructionMessage(confirmTunnelConstruction models.Co
 	return message
 }
 
-func CreateTunnelInstruction(tunnelInstruction models.TunnelInstruction) ([]byte) {
+func CreateTunnelInstruction(tunnelInstruction models.TunnelInstruction/*, sessionKey []byte*/, destinationPublicKey *rsa.PublicKey) ([]byte) {
 	// Message Type
 	messageType := uint16(569)
-
-	// Convert messageType to Byte array
-	messageTypeBuf := new(bytes.Buffer)
-	binary.Write(messageTypeBuf, binary.BigEndian, messageType)
-	message := messageTypeBuf.Bytes()
+	message := encryptMessageType(messageType, destinationPublicKey)
 
 	// Convert tunnelID to Byte Arrays
 	tunnelIDBuf := new(bytes.Buffer)
 	binary.Write(tunnelIDBuf, binary.BigEndian, tunnelInstruction.TunnelID)
 	message = append(message, tunnelIDBuf.Bytes()...)
+
+	// Append size of hostkey
+	destinationHostkeyLengthBuf := new(bytes.Buffer)
+	binary.Write(destinationHostkeyLengthBuf, binary.BigEndian, uint16(len(tunnelInstruction.OriginHostkey)))
+	message = append(message, destinationHostkeyLengthBuf.Bytes()...)
+
+	// Append Origin Hostkey
+	message = append(message, tunnelInstruction.OriginHostkey...)
 
 	// ToDo: Encrypt Data.
 	message = append(message, tunnelInstruction.Data...)
@@ -125,14 +152,10 @@ func CreateTunnelInstruction(tunnelInstruction models.TunnelInstruction) ([]byte
 	return message
 }
 
-func CreateConfirmTunnelInstruction(confirmTunnelInstruction models.ConfirmTunnelInstruction) ([]byte) {
+func CreateConfirmTunnelInstruction(confirmTunnelInstruction models.ConfirmTunnelInstruction/*, sessionKey []byte*/, destinationPublicKey *rsa.PublicKey) ([]byte) {
 	// Message Type
 	messageType := uint16(570)
-
-	// Convert messageType to Byte array
-	messageTypeBuf := new(bytes.Buffer)
-	binary.Write(messageTypeBuf, binary.BigEndian, messageType)
-	message := messageTypeBuf.Bytes()
+	message := encryptMessageType(messageType, destinationPublicKey)
 
 	// Convert tunnelID to Byte Arrays
 	tunnelIDBuf := new(bytes.Buffer)
@@ -222,12 +245,9 @@ func CreateTunnelID() (uint32){
 	return binary.BigEndian.Uint32(id)
 }
 
-func encryptMessageType(messageType uint16, destinationPublicKey *rsa.PublicKey) ([]byte) {
-	// Convert messageType to Byte array
-	messageTypeBuf := new(bytes.Buffer)
-	binary.Write(messageTypeBuf, binary.BigEndian, messageType)
-
-	encryptedMessageType, err := EncryptKeyExchange(destinationPublicKey, messageTypeBuf.Bytes())
+func encryptMessagePartsWithRSA(data []byte, destinationPublicKey *rsa.PublicKey) ([]byte) {
+	// Encrypt data
+	encryptedMessageType, err := EncryptKeyExchange(destinationPublicKey, data)
 	if err != nil {
 		log.Println("ConstructTunnelMessage: Message Type Encryption failed")
 	}
@@ -237,10 +257,17 @@ func encryptMessageType(messageType uint16, destinationPublicKey *rsa.PublicKey)
 	binary.Write(encryptedMessageTypeBuf, binary.BigEndian, uint16(len(encryptedMessageType)))
 	message := encryptedMessageTypeBuf.Bytes()
 
-	log.Println("Len Message Type: ", len(encryptedMessageType))
-
 	// Append Encrypted Message Type
 	message = append(message, encryptedMessageType...)
 
 	return message
+}
+
+func encryptMessageType(messageType uint16, destinationPublicKey *rsa.PublicKey) ([]byte) {
+	// Convert messageType to Byte array
+	messageTypeBuf := new(bytes.Buffer)
+	binary.Write(messageTypeBuf, binary.BigEndian, messageType)
+
+
+	return encryptMessagePartsWithRSA(messageTypeBuf.Bytes(), destinationPublicKey)
 }

@@ -4,6 +4,7 @@ import (
 	"services"
 	"log"
 	"encoding/binary"
+	"errors"
 )
 
 func StartUDPController(myPeer *services.Peer) {
@@ -23,7 +24,11 @@ func handleUDPMessage(message []byte, myPeer *services.Peer) {
 	// now, check if there is a right udp writer for this connection
 	if (myPeer.PeerObject.UDPConnections[tunnelID].RightWriter != nil) {
 		// if so, forward data
-		myPeer.PeerObject.UDPConnections[tunnelID].RightWriter.Write(message)
+		_, err := myPeer.PeerObject.UDPConnections[tunnelID].RightWriter.Write(message)
+		if err != nil {
+			services.CummunicationChannelError <- services.ChannelError{TunnelId: tunnelID, Error: errors.New("handleUDPMessage, Error while writing: " + err.Error())}
+			return
+		}
 	} else {
 		// reached final destination
 		log.Println("UDP: Final destiantion reached, message: ")

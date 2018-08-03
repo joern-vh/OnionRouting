@@ -11,6 +11,8 @@ import (
 	"crypto/x509"
 	"container/list"
 	"net"
+	"os"
+	"errors"
 )
 
 type availableHost struct {
@@ -26,9 +28,9 @@ var _, pub3, _ = services.ParseKeys("keypair4.pem")
 
 // define list of available host
 var AvailableHosts = []*availableHost{
-	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.0.15", Port:4200, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub1)},
-	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.0.15", Port:4500, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub2)},
-	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.0.15", Port:4800, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub3)},
+	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.2.3", Port:4200, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub1)},
+	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.2.3", Port:4500, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub2)},
+	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.2.3", Port:4800, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub3)},
 }
 
 func StartPeerController(myPeer *services.Peer) {
@@ -39,7 +41,20 @@ func StartPeerController(myPeer *services.Peer) {
 			log.Println("StartPeerController: New message from " + msg.Host)
 			handleTCPMessage(msg, myPeer)
 			handlePeerControllerMessage(msg, myPeer)
-			}
+		}
+	}()
+}
+
+func StartErrorHandling(myPeer *services.Peer){
+	log.Println("Error Handling, started Controller")
+	go func() {
+		for error := range services.CummunicationChannelError {
+			log.Println("\n\n")
+			log.Println("StartErrorHandling, new error for Tunnel " , strconv.Itoa(int(error.TunnelId)))
+			log.Println(error.Error.Error())
+			// Now, handle error
+			os.Exit(1)
+		}
 	}()
 }
 
@@ -48,13 +63,13 @@ func handlePeerControllerMessage(messageChannel services.TCPMessageChannel, myPe
 	log.Println("PeerController: Messagetype:", messageType)
 
 	switch messageType {
-		// ONION TUNNEL BUILD
-		case 560:
-			handleOnionTunnelBuild(messageChannel, myPeer)
-			break
+	// ONION TUNNEL BUILD
+	case 560:
+		handleOnionTunnelBuild(messageChannel, myPeer)
+		break
 
-		default:
-			return nil
+	default:
+		return nil
 	}
 
 	return nil
@@ -94,7 +109,7 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *s
 	myPeer.PeerObject.TCPConnections[newTunnelID] = &models.TCPConnection{newTunnelID, nil, nil, &models.OnionTunnelBuild{DestinationHostkey: destinationHostkey, Port: onionPort, DestinationAddress: destinationAddress, NetworkVersion: networkVersionString}, nil, nil,x509.MarshalPKCS1PublicKey(myPeer.PeerObject.PublicKey)}
 
 	// now, initiate Tunnel Construction
-	initiateTunnelConstruction(newTunnelID, myPeer, 4)
+	initiateTunnelConstruction(newTunnelID, myPeer, 3)
 }
 
 func initiateTunnelConstruction(tunnelId uint32, mypeer *services.Peer, minAmountHups int){
@@ -133,6 +148,31 @@ func initiateTunnelConstruction(tunnelId uint32, mypeer *services.Peer, minAmoun
 	exchangeKeyMessage = append(exchangeKeyMessage, []byte("\r\n")...)
 
 	mypeer.PeerObject.TCPConnections[tunnelId].RightWriter.TCPWriter.Write(exchangeKeyMessage)
+
+	// Then, start listening
+	// TODO: Write function to keep track of confirmations >>> build evntloop
+	log.Println("Start listening for Confirm messages")
+	go func() {
+		for msg := range services.CommunicationChannelTCPConfirm {	// TODO: Check for tunnelID!
+			log.Println("\n\n")
+			log.Println("ConfirmListener: New confirm for tunnel " + strconv.Itoa(int(msg.TunnelId)))
+
+			// first, check if the tunnelID matchs to the id which initialized the function
+			if msg.TunnelId == tunnelId {
+				// now, check if the length of TunnelHostOrder[tunnelId] < minAmountHups >> if so, start a new tunnel construction
+				if mypeer.PeerObject.TunnelHostOrder[tunnelId].Len() < minAmountHups {
+					connectToNextHop(AvailableHosts[mypeer.PeerObject.TunnelHostOrder[tunnelId].Len() - 1], tunnelId, mypeer)
+				} else {
+					log.Println("We've enough hops!!!!")
+					for e := mypeer.PeerObject.TunnelHostOrder[tunnelId].Front(); e != nil; e = e.Next() {
+						fmt.Println(e.Value) // print out the elements
+					}
+					// TODO: connect to final and if else to check if final yes or no
+				}
+			}
+			// no else needed, another instance of the function handles that
+		}
+	}()
 
 
 	// OLD
@@ -187,19 +227,38 @@ func connectToNextHop(nextHop *availableHost, tunnelId uint32, myPeer *services.
 	myPeer.PeerObject.CryptoSessionMap[newIdentifier] = &models.CryptoObject{TunnelId: tunnelId, PublicKey: publicKey, PrivateKey:privateKey,SessionKey:nil, Group:group}
 
 	// Encrypt Public Key with destination key
-	log.Println("PEER: ", nextHop.DestinationHostkey)
-	encryptedPubKey, err := services.EncryptKeyExchange(hostkeyPub, publicKey)
+	//log.Println("PEER: ", nextHop.DestinationHostkey)
+	/*encryptedPubKey, err := services.EncryptKeyExchange(hostkeyPub, publicKey)
 	if err != nil {
 		log.Println("Problem encrypting pubblic key")
-	}
+	}*/
 
 	log.Println("TESTING: SEND TUNNEL INSTRUCTION")
-	dataMessage := models.DataConstructTunnel{NetworkVersion: nextHop.NetworkVersion, DestinationAddress: nextHop.DestinationAddress, Port: uint16(nextHop.Port), DestinationHostkey: x509.MarshalPKCS1PublicKey(hostkeyPub), PublicKey: encryptedPubKey}
+	dataMessage := models.DataConstructTunnel{NetworkVersion: nextHop.NetworkVersion, DestinationAddress: nextHop.DestinationAddress, Port: uint16(nextHop.Port), DestinationHostkey: x509.MarshalPKCS1PublicKey(hostkeyPub), PublicKey: publicKey}
 	data := services.CreateDataConstructTunnel(dataMessage)
 
+	// Encrypt Data multiple Times
+	for e := myPeer.PeerObject.TunnelHostOrder[tunnelId].Back(); e != nil; e = e.Prev() {
+		fmt.Println(e.Value) // print out the elements
+		destinationHostkeyString := fmt.Sprintf("%s", e.Value)
+		identifierData := strconv.Itoa(int(tunnelId)) + destinationHostkeyString
+		if myPeer.PeerObject.CryptoSessionMap[identifierData] != nil {
+			sessionKey := myPeer.PeerObject.CryptoSessionMap[identifierData].SessionKey
+			data, err = services.EncryptData(sessionKey, data)
+			if err != nil {
+				log.Println("Error while multiple encrypting data: ", err.Error())
+			}
+		}
+	}
+
+	senderHostkeyPublicKey, err := x509.ParsePKCS1PublicKey(myPeer.PeerObject.TCPConnections[tunnelId].RightHostkey)
+	if err != nil {
+		services.CummunicationChannelError <- services.ChannelError{TunnelId: tunnelId, Error: errors.New("connectToNextHop: " + err.Error())}
+	}
+
 	// Now, just for tests, send a forward to a new peer
-	tunnelInstructionMessage := models.TunnelInstruction{TunnelID: tunnelId, Data: data}
-	message := services.CreateTunnelInstruction(tunnelInstructionMessage)
+	tunnelInstructionMessage := models.TunnelInstruction{TunnelID: tunnelId, OriginHostkey: x509.MarshalPKCS1PublicKey(myPeer.PeerObject.PublicKey), Data: data}
+	message := services.CreateTunnelInstruction(tunnelInstructionMessage, senderHostkeyPublicKey)
 
 	myPeer.PeerObject.TCPConnections[tunnelId].RightWriter.TCPWriter.Write(message)
 	log.Println("Sent Tunnel Instruction to " + myPeer.PeerObject.TCPConnections[tunnelId].RightWriter.DestinationIP + ", Port: " + strconv.Itoa(myPeer.PeerObject.TCPConnections[tunnelId].RightWriter.DestinationPort))
