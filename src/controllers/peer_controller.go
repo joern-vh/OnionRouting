@@ -29,6 +29,8 @@ var _, pub1, _ = services.ParseKeys("keypair2.pem")
 var _, pub2, _ = services.ParseKeys("keypair3.pem")
 var _, pub3, _ = services.ParseKeys("keypair4.pem")
 
+var cmModule string
+
 // define list of available host
 var AvailableHosts = []*availableHost{
 	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.2.3", Port:4200, DestinationHostkey: x509.MarshalPKCS1PublicKey(pub1)},
@@ -79,6 +81,7 @@ func handlePeerControllerMessage(messageChannel services.TCPMessageChannel, myPe
 }
 
 func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *services.Peer) {
+	cmModule = services.GetIPOutOfAddr(messageChannel.Host)
 	readHosts()
 
 	log.Print("Messagetype: Onion tunnel build")
@@ -183,9 +186,21 @@ func initiateTunnelConstruction(tunnelId uint32, mypeer *services.Peer, minAmoun
 					connectToNextHop(AvailableHosts[mypeer.PeerObject.TunnelHostOrder[tunnelId].Len() - 1], tunnelId, mypeer)
 				} else {
 					log.Println("We've enough hops!!!!")
+
+					conn, err := net.Dial("tcp", cmModule + ":" + strconv.Itoa(9999))
+					if err != nil {
+						log.Println("READY MESSAGE")
+					}
+
+					ReadyMessage := models.OnionTunnelReady{DestinationHostkey: mypeer.PeerObject.TCPConnections[tunnelId].FinalDestination.DestinationHostkey, TunnelID: tunnelId}
+					message := services.CreateOnionTunnelReady(ReadyMessage)
+
+					conn.Write(message)
+
 					for e := mypeer.PeerObject.TunnelHostOrder[tunnelId].Front(); e != nil; e = e.Next() {
 						fmt.Println(e.Value) // print out the elements
 					}
+
 					return
 				}
 			}

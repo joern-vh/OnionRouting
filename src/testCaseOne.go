@@ -9,7 +9,15 @@ import (
 	"os"
 	"bufio"
 	"crypto/x509"
+	"os/signal"
+	"bytes"
 )
+
+// Used to transmit the message and the ip in the CommunicationChannelTCPMessages
+type TCPMessageChannel struct {
+	Message		[]byte
+	Host		string		// Attention, hast port
+}
 
 type availableHost struct {
 	NetworkVersion		string
@@ -31,6 +39,8 @@ var _, pub1, _ = services.ParseKeys("keypair2.pem")
 var _, pub2, _ = services.ParseKeys("keypair3.pem")
 var _, pub3, _ = services.ParseKeys("keypair4.pem")
 
+var CommunicationChannelTCPMessages chan TCPMessageChannel
+
 // define list of available host >> If you want to add a new host, simply use the &availableHost Model as shown below >> TODO: Please adapt iPaddress
 var AvailableHosts = []*availableHost{
 	&availableHost{NetworkVersion:"IPv4", DestinationAddress:"192.168.2.3", Port:3000, DestinationHostkeyPath: "keypair1.pem"},
@@ -44,15 +54,18 @@ func main()  {
 	var err error
 	FreePortForListening, err = services.GetFreePort()
 	// first, create a TCP Listener to receive incoming messages >> for example the OnionTunnelReady, imitating the CM/UI module.
-	tcpAddr, err := net.ResolveTCPAddr("tcp4", ":" + strconv.Itoa(FreePortForListening))
+	tcpAddr, err := net.ResolveTCPAddr("tcp4", ":" + strconv.Itoa(9999))
 	if err != nil {
-		log.Fatal("Problem creating listernier, please check your input")
+		log.Fatal("Problem creating listerning, please check your input")
 	}
 
 	listener, err := net.ListenTCP("tcp", tcpAddr)
 	if err != nil {
 		log.Fatal("createTcpListener: Problem creating net.TCPListener: " + err.Error())
 	}
+
+	CommunicationChannelTCPMessages = make(chan TCPMessageChannel)
+
 	// accept new connections on TCP
 	go func() {
 		log.Println("StartTCPListening: Started listening")
@@ -62,7 +75,7 @@ func main()  {
 				log.Println("Couldn't accept new TCP Connection, not my problem!")
 			} else {
 				// Pass each message into the right channel
-				log.Println("Conn: ", conn1)
+				go handleMessages(conn1)
 			}
 		}
 	}()
@@ -80,6 +93,70 @@ func main()  {
 
 	conn.Write(message)
 
+
+
+	c := make(chan os.Signal, 1)
+	// We'll accept graceful shutdowns when quit via SIGINT (Ctrl+C)
+	// SIGKILL, SIGQUIT or SIGTERM (Ctrl+/) will not be caught.
+	signal.Notify(c, os.Interrupt)
+
+	// Block until we receive our signal.
+	<-c
+
+	log.Println("Peer status: offline \n\n\n")
+	os.Exit(0)
+
+}
+
+
+// Passes each message into the right channel
+func handleMessages (conn net.Conn) {
+	reader := bufio.NewReader(conn)
+	scanner := bufio.NewScanner(reader)
+
+	defer conn.Close()
+
+	scanner.Split(ScanCRLF)
+
+	for scanner.Scan() {
+		// Pass newMessage into TCPMessageChannel
+		CommunicationChannelTCPMessages <- TCPMessageChannel{scanner.Bytes(), conn.RemoteAddr().String()}
+	}
+
+}
+
+// dropCR drops a terminal \r from the data.
+func dropCR(data []byte) []byte {
+	if len(data) > 0 && data[len(data)-1] == '\r' {
+		return data[0 : len(data)-1]
+	}
+	return data
+}
+
+func ScanCRLF(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
+	}
+	if i := bytes.Index(data, []byte{'\r', '\n'}); i >= 0 {
+		// We have a full newline-terminated line.
+		return i + 2, dropCR(data[0:i]), nil
+	}
+	// If we're at EOF, we have a final, non-terminated line. Return it.
+	if atEOF {
+		return len(data), dropCR(data), nil
+	}
+	// Request more data.
+	return 0, nil, nil
+}
+
+func listening() {
+	go func() {
+		for msg := range CommunicationChannelTCPMessages {
+			log.Println("\n\n")
+			log.Println("StartPeerController: New message from " + msg.Host)
+			log.Println(msg.Message)
+		}
+	}()
 }
 
 func writeFile() {
