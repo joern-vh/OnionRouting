@@ -21,7 +21,7 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 	switch messageType {
 		// ONION TUNNEL DESTROY
 		case 563:
-			handleOnionTunnelDestroy(messageChannel, myPeer)
+			handleOnionTunnelDestroy(binary.BigEndian.Uint32(messageChannel.Message[4:8]), myPeer)
 			break
 
 		// ONION TUNNEL DATA
@@ -160,30 +160,29 @@ func handleTCPMessage(messageChannel services.TCPMessageChannel, myPeer *service
 	return
 }
 
-func handleOnionTunnelDestroy(messageChannel services.TCPMessageChannel, myPeer *services.Peer) {
+func handleOnionTunnelDestroy(tunnelId uint32, myPeer *services.Peer) {
 	log.Println("ONION TUNNEL DESTROY")
-	tunnelID := binary.BigEndian.Uint32(messageChannel.Message[4:8])
-	log.Println(tunnelID)
+	log.Println(tunnelId)
 
 	// check if right writer tcp exists >
-	if myPeer.PeerObject.TCPConnections[tunnelID] != nil {
+	if myPeer.PeerObject.TCPConnections[tunnelId] != nil {
 
-		if myPeer.PeerObject.TCPConnections[tunnelID].RightWriter != nil {
-			onionTunnelDestroy := models.OnionTunnelDestroy{TunnelID:tunnelID}
+		if myPeer.PeerObject.TCPConnections[tunnelId].RightWriter != nil {
+			onionTunnelDestroy := models.OnionTunnelDestroy{TunnelID:tunnelId}
 			message := services.CreateOnionTunnelDestroy(onionTunnelDestroy)
 			//newMessage := append(message, []byte("\r\n")...)
 			//log.Println(newMessage)
-			myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.TCPWriter.Write(message)
+			myPeer.PeerObject.TCPConnections[tunnelId].RightWriter.TCPWriter.Write(message)
 		}
 		// now, delete everything
-		delete(myPeer.PeerObject.TCPConnections, tunnelID)
-		delete(myPeer.PeerObject.UDPConnections, tunnelID)
+		delete(myPeer.PeerObject.TCPConnections, tunnelId)
+		delete(myPeer.PeerObject.UDPConnections, tunnelId)
 		// TODO: Delete Cryptpsessionmap
-		delete(myPeer.PeerObject.TunnelHostOrder, tunnelID)
+		delete(myPeer.PeerObject.TunnelHostOrder, tunnelId)
 	} else {
 		log.Println("Done deleting")
 	}
-	log.Println(myPeer.PeerObject.TCPConnections[tunnelID])
+	log.Println(myPeer.PeerObject.TCPConnections[tunnelId])
 
 	return
 }
@@ -322,6 +321,12 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 
 	log.Println("Sender: " + myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.DestinationIP + ", Port: " + strconv.Itoa(myPeer.PeerObject.TCPConnections[tunnelID].RightWriter.DestinationPort))
 
+
+	// Start trafffic jamming
+	go func() {
+		InitiateTrafficJamming(tunnelID, myPeer)
+	}()
+
 	// Check whether left writer exists. If yes, create Confirm Tunnel Instruction with ConfirmTunnelConstruction data.
 	if myPeer.PeerObject.TCPConnections[tunnelID].LeftWriter != nil {
 		// Now, create a udp righter to the right side (where we forwarded our tunnel construction to
@@ -373,7 +378,7 @@ func handleConfirmTunnelConstruction(messageChannel services.TCPMessageChannel, 
 		}
 		myPeer.AppendNewUDPConnection(newUDPConnection)
 
-		services.CommunicationChannelTCPConfirm <- services.ConfirmMessageChannel{TunnelId:tunnelID}
+		go func() {services.CommunicationChannelTCPConfirm <- services.ConfirmMessageChannel{TunnelId:tunnelID} } ()
 	}
 }
 
@@ -424,7 +429,6 @@ func handleConfirmTunnelInnstructionConstruction(tunnelId uint32, data []byte, m
 		}
 	}
 
-	// TODO: perhaps yes here too????
 	services.CommunicationChannelTCPConfirm <- services.ConfirmMessageChannel{TunnelId:tunnelId}
 }
 

@@ -6,7 +6,7 @@ import (
 	"math/rand"
 )
 
-const symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+const symbols = "abcdefghijklmnopqrstuvwxyz"
 
 func GetIPOutOfAddr(addr string) string {
 	if idx := strings.Index(addr, ":"); idx != -1 {
@@ -33,7 +33,7 @@ func getFreePort() (int, error) {
 
 // used to generate random data
 func GenRandomData() []byte{
-	length := (rand.Intn(300 - 0) + 0)
+	length := (rand.Intn(300 - 0))
 	b := make([]byte, length)
 	for i := range b {
 		b[i] = symbols[rand.Intn(len(symbols))]

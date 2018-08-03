@@ -12,6 +12,9 @@ import (
 	"container/list"
 	"net"
 	"os"
+	"math/rand"
+	"time"
+	"errors"
 )
 
 type availableHost struct {
@@ -51,7 +54,7 @@ func StartErrorHandling(myPeer *services.Peer){
 			log.Println("\n\n")
 			log.Println("StartErrorHandling, new error for Tunnel " , strconv.Itoa(int(error.TunnelId)))
 			log.Println(error.Error.Error())
-			// Now, handle error
+			handleOnionTunnelDestroy(uint32(error.TunnelId), myPeer)
 			os.Exit(1)
 		}
 	}()
@@ -112,6 +115,7 @@ func handleOnionTunnelBuild(messageChannel services.TCPMessageChannel, myPeer *s
 }
 
 func initiateTunnelConstruction(tunnelId uint32, mypeer *services.Peer, minAmountHups int){
+	log.Println(tunnelId)
 	// This function is used to keep track of the tunnel state
 
 	//first, generate TCP Writer for the first hop and assign it to the conneciton
@@ -154,13 +158,14 @@ func initiateTunnelConstruction(tunnelId uint32, mypeer *services.Peer, minAmoun
 
 
 	// Then, start listening
-	// TODO: Write function to keep track of confirmations >>> build evntloop
+	// TODO: Find idea to determine the function
 	log.Println("Start listening for Confirm messages")
 	go func() {
 		for msg := range services.CommunicationChannelTCPConfirm {	// TODO: Check for tunnelID!
 			log.Println("\n\n")
 			log.Println("ConfirmListener: New confirm for tunnel " + strconv.Itoa(int(msg.TunnelId)))
-
+			log.Println("myTunnelId: " + strconv.Itoa(int(tunnelId)))
+			log.Println("receivedTunnelId: " + strconv.Itoa(int(msg.TunnelId)))
 			// first, check if the tunnelID matchs to the id which initialized the function
 			if msg.TunnelId == tunnelId {
 				// now, check if the length of TunnelHostOrder[tunnelId] < minAmountHups >> if so, start a new tunnel construction
@@ -171,7 +176,7 @@ func initiateTunnelConstruction(tunnelId uint32, mypeer *services.Peer, minAmoun
 					for e := mypeer.PeerObject.TunnelHostOrder[tunnelId].Front(); e != nil; e = e.Next() {
 						fmt.Println(e.Value) // print out the elements
 					}
-					// TODO: connect to final and if else to check if final yes or no
+					return
 				}
 			}
 			// no else needed, another instance of the function handles that
@@ -211,4 +216,27 @@ func connectToNextHop(nextHop *availableHost, tunnelId uint32, myPeer *services.
 
 	myPeer.PeerObject.TCPConnections[tunnelId].RightWriter.TCPWriter.Write(message)
 	log.Println("Sent Tunnel Instruction to " + myPeer.PeerObject.TCPConnections[tunnelId].RightWriter.DestinationIP + ", Port: " + strconv.Itoa(myPeer.PeerObject.TCPConnections[tunnelId].RightWriter.DestinationPort))
+}
+
+// TODO: !!!!!!!! MAKE FORWARDING !!!!!!
+func InitiateTrafficJamming(tunnelId uint32, myPeer *services.Peer)  {
+	i := 0
+	for true {
+		// Now, start traffic jamming
+		rand.Seed(time.Now().Unix())
+		time.Sleep(time.Duration((rand.Intn(2000-500) + 500)) * time.Millisecond)
+		newTrafficJamMessage := models.OnionTunnelTrafficJam{TunnelID:tunnelId, Data:services.GenRandomData()}
+		message := services.CreateOnionTunnelTrafficJamTCP(newTrafficJamMessage)
+		// like that to prevent null pointer exceptions
+		if myPeer.PeerObject.TCPConnections[tunnelId] != nil {
+			_, err := myPeer.PeerObject.TCPConnections[tunnelId].RightWriter.TCPWriter.Write(message)
+			if err != nil {
+				services.CummunicationChannelError <- services.ChannelError{TunnelId: tunnelId, Error: errors.New("InitiateTrafficJamming, Error: " + err.Error())}
+				return
+			}
+			i++
+		} else {
+			return
+		}
+	}
 }
