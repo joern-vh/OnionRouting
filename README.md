@@ -1,4 +1,4 @@
-# Group 61 Project Page
+#  Student Project Onion Routing
 ## Requirements
 * RSA Keypair (4096 bit) in PEM format (`openssl genpkey -algorithm RSA -out keypair.pem -pkeyopt rsa_keygen_bits:4096`)
 * Packages
@@ -9,7 +9,12 @@
 * run `go run src peer.go -C PATH/TO/CONFIG.INI`
 
 ## Status
-The master branch contains a runnable version of our implementation.
-The encryption branch contains our implementation including encryption. Unfortunately, we had some issues with some hostkeys.
+The master branch contains a runnable version of our OnionRouting implementation, however encryption is not working.
 
-Detailed explanation of our project's status will be stated in our final report.
+The encryption branch contains the implementation including encryption (still there are some issues with the hostkeys).
+
+Detailed explanation of our project's status are stated in the final report.
+
+## Contributors
+* Jan-Cedric Anslinger ([CedricJAnslinger](https://github.com/CedricJAnslinger))
+* Jörn von Henning ([CedricJAnslinger](https://github.com/joern-vh))
