@@ -17,4 +17,4 @@ Detailed explanation of our project's status are stated in the final report.
 
 ## Contributors
 * Jan-Cedric Anslinger ([CedricJAnslinger](https://github.com/CedricJAnslinger))
-* Jörn von Henning ([CedricJAnslinger](https://github.com/joern-vh))
+* Jörn von Henning ([joern-vh](https://github.com/joern-vh))
